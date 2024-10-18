@@ -1,0 +1,30 @@
+{
+    "43718": {
+        "job_id": "43718",
+        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_base_SAM_Long",
+        "job_full_name": "sim_base_SAM_Long.sh",
+        "NODES": "7",
+        "progress": 0.7324698526127735,
+        "ETA": "1h37",
+        "push_time": 3176
+    },
+    "43719": {
+        "job_id": "43719",
+        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_1keV",
+        "job_full_name": "sim_1keV.sh",
+        "NODES": "5",
+        "progress": 0.4421616793211255,
+        "ETA": "4h28",
+        "push_time": 2983
+    },
+    "43937": {
+        "job_id": "43937",
+        "job_full_path": "/sps3/jeremy/LULI/plasma_OAM_XDIR_NO_IONS_DIAGS",
+        "job_full_name": "plasma_OAM_XDIR_NO_IONS_DIAGS.sh",
+        "NODES": "5",
+        "progress": 0,
+        "ETA": "-",
+        "push_time": -1
+    },
+    "datetime": "18/10 - 18h05"
+}
