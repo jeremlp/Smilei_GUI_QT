@@ -43,8 +43,8 @@ import json
 from pathlib import Path
 from functools import partial
 # from win11toast import toast
-# from pyqttoast import Toast, ToastPreset
-from utils import Popup
+from pyqttoast import ToastPreset
+from utils import Popup, encrypt
 import decimal
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -202,8 +202,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.int_validator.setLocale(QtCore.QLocale("en_US"))
 
         self.MEMORY = psutil.virtual_memory
-        self.DISK = psutil.disk_usage(os.environ["SMILEI_CLUSTER"])
-        self.SCRIPT_VERSION ='0.10.10 "Binning Compa & Trnd download"'
+        self.DISK = psutil.disk_usage
+        self.SCRIPT_VERSION ='0.10.12 "Binning Compa & Trnd download"'
         self.COPY_RIGHT = "Jeremy LA PORTE"
         self.spyder_default_stdout = sys.stdout
 
@@ -592,18 +592,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plt_toolbar_3.setFixedHeight(self.toolBar_height)
 
         layoutTabSettingsCheck = QtWidgets.QHBoxLayout()
-        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx","Lx_trans","pθ","pθ_trans", "Jθ", "Jθ_trans", "Ekin", "Ekin_trans"]
+        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx","Lx_trans","pθ","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans", "Ekin", "Ekin_trans"]
         self.plasma_check_list = []
         for i, name in enumerate(self.plasma_names):
             plasma_CHECK = QtWidgets.QCheckBox(name)
             self.plasma_check_list.append(plasma_CHECK)
-            # layoutPlasmaCheck = self.creatPara(name + " ", plasma_CHECK,adjust_label=True,fontsize=12)
-            # layoutPlasmaCheck.setSpacing(0)
-            if i%2==0 and i>0:
-                separator1 = QtWidgets.QFrame()
-                separator1.setFrameShape(QtWidgets.QFrame.VLine)
-                separator1.setLineWidth(1)
-                layoutTabSettingsCheck.addWidget(separator1)
+
+            # if i%2==0 and i>0:
+                # separator1 = QtWidgets.QFrame()
+                # separator1.setFrameShape(QtWidgets.QFrame.VLine)
+                # separator1.setLineWidth(1)
+                # layoutTabSettingsCheck.addWidget(separator1)
             layoutTabSettingsCheck.addWidget(plasma_CHECK)
 
         # layoutTabSettingsCheck.addStretch(50)
@@ -925,7 +924,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutBottom.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
 
 
-        self.general_info_LABEL = QtWidgets.QLabel(f"Version: {self.SCRIPT_VERSION}  |  Memory: {self.MEMORY().used*100/self.MEMORY().total:.0f}% | Storage: {self.DISK.free/(2**30):.1f} Go | {self.COPY_RIGHT}")
+        self.general_info_LABEL = QtWidgets.QLabel(f"Version: {self.SCRIPT_VERSION}  |  Memory: {self.MEMORY().used*100/self.MEMORY().total:.0f}% | Storage: {self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30):.1f} Go | {self.COPY_RIGHT}")
 
 
         layoutMAIN = QtWidgets.QVBoxLayout()
@@ -1132,13 +1131,13 @@ class MainWindow(QtWidgets.QMainWindow):
     def updateInfoLabel(self):
         mem_prc = self.MEMORY().used*100/self.MEMORY().total
         if mem_prc > 85:
-            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION}  |  Memory: {self.MEMORY().used*100/self.MEMORY().total:.0f}% | Storage: {self.DISK.free/(2**30):.1f} Go | {self.COPY_RIGHT}")
+            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION}  |  Memory: {self.MEMORY().used*100/self.MEMORY().total:.0f}% | Storage: {self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30):.1f} Go | {self.COPY_RIGHT}")
 
-            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | <font color='red'>Memory: {mem_prc:.0f}%</font> | Storage: {self.DISK.free/(2**30):.1f} Go | {self.COPY_RIGHT}")
+            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | <font color='red'>Memory: {mem_prc:.0f}%</font> | Storage: {self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30):.1f} Go | {self.COPY_RIGHT}")
         elif mem_prc > 75:
-            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | <font color='orange'>Memory: {mem_prc:.0f}%</font> | Storage: {self.DISK.free/(2**30):.1f} Go | {self.COPY_RIGHT}")
+            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | <font color='orange'>Memory: {mem_prc:.0f}%</font> | Storage: {self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30):.1f} Go | {self.COPY_RIGHT}")
         else:
-            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | Memory: {mem_prc:.0f}% | Storage: {self.DISK.free/(2**30):.1f} Go | {self.COPY_RIGHT}")
+            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | Memory: {mem_prc:.0f}% | Storage: {self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30):.1f} Go | {self.COPY_RIGHT}")
 
     def onOpenSim(self):
         sim_file_DIALOG= QtWidgets.QFileDialog()
@@ -1334,6 +1333,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if tab_name=="TORNADO":
             self.actionTornado.setChecked(False)
             self.onRemoveTornado()
+        if tab_name=="BINNING":
+            self.actionDiagBinning.setChecked(False)
+            self.onRemoveBinning()
         if tab_name == "COMPA":
             self.actionDiagCompa.setChecked(False)
             self.onRemoveCompa()
@@ -1437,7 +1439,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     if self.programm_TABS.tabText(currentIndex) == "BINNING":
                         self.programm_TABS.removeTab(currentIndex)
                         if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
-                        self.onRemoveCompa()
+                        self.onRemoveBinning()
             else:
                 self.programm_TABS.addTab(self.binning_Widget,"BINNING")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
@@ -1536,7 +1538,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # print(f"AM/U={AM_tot/self.Uelm_tot_max:.2f}")
         # print(f"Scalar time plot \nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ")
-        figure.suptitle(f"Scalar time plot \nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
+        figure.suptitle(f"{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
         ax.relim()            # Recompute the limits based on current data
         ax.autoscale_view()   # Apply the new limits
         figure.tight_layout()
@@ -1560,9 +1562,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ax4_scalar.grid()
             self.ax4_scalar.set_xlabel("t/t0",fontsize=14)
 
-            
+
             print("===== INIT SCALAR =====")
-            
+
         self.INIT_tabScalar = False
 
         # t0 = time.perf_counter()
@@ -1655,7 +1657,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ax.autoscale_view()   # Apply the new limits
         # hfont = {'fontname':'Helvetica'}
 
-        figure.suptitle(f"""Scalar time plot \nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ""",fontsize=14)
+        figure.suptitle(f"""{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ""",fontsize=14)
         figure.tight_layout()
         canvas.draw()
         # t1 = time.perf_counter()
@@ -1712,9 +1714,9 @@ class MainWindow(QtWidgets.QMainWindow):
         byte_size_track = getsizeof(self.fields_data_list)+getsizeof(self.fields_image_list)
         print("Memory from FIELDS:",round(byte_size_track*10**-6,1),"MB (",round(byte_size_track*100/psutil.virtual_memory().total,1),"%)")
         if combo_box_index==0:
-            self.figure_1.suptitle(f"t={self.fields_t_range[time_idx]/self.l0:.2f}$~t_0$")
+            self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
         else:
-            self.figure_1.suptitle(f"$t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[x_idx]/self.l0:.2f}~\lambda$")
+            self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[x_idx]/self.l0:.2f}~\lambda$")
         self.figure_1.tight_layout()
         self.figure_1.tight_layout()
         self.canvas_1.draw()
@@ -1821,7 +1823,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if combo_box_index==0:
                 for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,:,:,self.fields_trans_mid_idx].T)
-                        self.figure_1.suptitle(f"t={self.fields_t_range[time_idx]/self.l0:.2f}$~t_0$")
+                        self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
                         im.autoscale()
             else:
                 for i,im in enumerate(self.fields_image_list):
@@ -1843,12 +1845,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 if combo_box_index==0:
                     for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,:,:,self.fields_trans_mid_idx].T)
-                        self.figure_1.suptitle(f"t={self.fields_t_range[time_idx]/self.l0:.2f}$~t_0$")
+                        self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
                 else:
                     for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,xcut_idx,:,:].T)
                         # im.autoscale()
-                self.figure_1.suptitle(f"$t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$")
+                self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$")
                 self.canvas_1.draw()
                 time.sleep(0.05)
                 app.processEvents()
@@ -1885,10 +1887,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateInfoLabel()
 
     def onRemoveCompa(self):
-        if not self.INIT_tabPlasma:
+        if not self.INIT_tabPlasma == True and self.INIT_tabPlasma is not None:
             del self.compa_plasma_paxisX_long,self.compa_plasma_paxisY_long,self.compa_plasma_t_range,self.compa_plasma_paxisY,
             self.compa_plasma_paxisZ,self.compa_plasma_paxisX_Bx, self.compa_plasma_extentXY_long, self.compa_plasma_extentYZ
-            gc.collect()           
+            gc.collect()
+        self.updateInfoLabel()
+
+    def onRemoveBinning(self):
+        if self.is_sim_loaded:
+            del self.binning_t_range, self.compa_binning_t_range, self.binning_data_list,self.binning_image_list
+
+            try:
+                del self.compa_binning_image, self.compa_binning_data, self.compa_binning_image2, self.compa_binning_data2
+            except: pass
         self.updateInfoLabel()
 
     def onRemoveTornado(self):
@@ -1964,7 +1975,7 @@ class MainWindow(QtWidgets.QMainWindow):
             vmax = 0.75*np.max(self.Lx_track[-1])
             self.track_trans_distrib_im = ax2.scatter(self.y[0]/l0,self.z[0]/l0,c=self.Lx_track[-1],s=1,cmap="RdYlBu", vmin=-vmax,vmax=vmax)
             self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
-            self.figure_2.suptitle(f"t={self.track_t_range[-1]/self.l0:.2f}$~t_0$ (N={self.track_N/1000:.2f}k)")
+            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
             self.figure_2.tight_layout()
             self.canvas_2.draw()
             time1 = time.perf_counter()
@@ -1982,7 +1993,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.track_time_EDIT.setText(str(round(self.track_t_range[time_idx]/l0,2)))
             self.track_trans_distrib_im.set_array(self.Lx_track[time_idx])
             self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
-            self.figure_2.suptitle(f"t={self.track_t_range[time_idx]/self.l0:.2f}$~t_0$ (N={self.track_N/1000:.2f}k)")
+            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
             self.canvas_2.draw()
 
         elif check_id == 1000: #PLAY ANIMATION
@@ -1998,7 +2009,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.track_trans_distrib_im.set_array(self.Lx_track[time_idx])
                 self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
 
-                self.figure_2.suptitle(f"t={self.track_t_range[time_idx]/self.l0:.2f}$~t_0$ (N={self.track_N/1000:.2f}k)")
+                self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
                 self.canvas_2.draw()
                 # print('drawn')
                 time.sleep(anim_speed)
@@ -2090,8 +2101,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     vmax = 0.1
                 else:
                     cmap = "RdYlBu"
-                    vmin = -0.1*np.max(np.abs(self.plasma_data_list[k][time_idx]))
-                    vmax =  0.1*np.max(np.abs(self.plasma_data_list[k][time_idx]))
+                    vmin = -0.05*np.max(np.abs(self.plasma_data_list[k][time_idx]))
+                    vmax =  0.05*np.max(np.abs(self.plasma_data_list[k][time_idx]))
 
                 if "trans" in self.plasma_names[i]:
                     extent = self.plasma_extentYZ
@@ -2107,7 +2118,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.figure_3.colorbar(im, ax=ax,pad=0.01)
                 self.plasma_image_list.append(im)
                 k+=1
-        self.figure_3.suptitle(f"t={self.plasma_t_range[time_idx]/l0:.2f} t0")
+        self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.plasma_t_range[time_idx]/l0:.2f}~t_0$")
         for w in range(10):
             self.figure_3.tight_layout()
             self.figure_3.tight_layout()
@@ -2218,7 +2229,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     im.set_data(self.plasma_data_list[i][time_idx].T)
 
-            self.figure_3.suptitle(f"$t={self.plasma_t_range[time_idx]/l0:.2f}~t_0$")
+            self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.plasma_t_range[time_idx]/l0:.2f}~t_0$")
             self.canvas_3.draw()
 
         elif check_id == 1000 :
@@ -2242,7 +2253,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     else:
                         im.set_data(self.plasma_data_list[i][time_idx,:,:].T)
 
-                self.figure_3.suptitle(f"t={self.plasma_t_range[time_idx]/self.l0:.2f}$~t_0$")
+                self.figure_3.suptitle(f"{self.sim_directory_name} | t={self.plasma_t_range[time_idx]/self.l0:.2f}$~t_0$")
                 self.canvas_3.draw()
                 time.sleep(0.01)
                 app.processEvents()
@@ -2372,30 +2383,30 @@ class MainWindow(QtWidgets.QMainWindow):
                                   self.plasma_paxisY_long[0]/l0-self.Ltrans/l0/2,self.plasma_paxisY_long[-1]/l0-self.Ltrans/l0/2]
             self.plasma_extentYZ = [self.plasma_paxisY[0]/l0-self.Ltrans/l0/2,self.plasma_paxisY[-1]/l0-self.Ltrans/l0/2,
                              self.plasma_paxisZ[0]/l0-self.Ltrans/l0/2,self.plasma_paxisZ[-1]/l0-self.Ltrans/l0/2]
-            
+
             compa_Bx_long_diag = self.compa_S.Probe(2,"Bx")
             self.compa_plasma_paxisX_long = compa_Bx_long_diag.getAxis("axis1")[:,0]
             self.compa_plasma_paxisY_long = compa_Bx_long_diag.getAxis("axis2")[:,1]
             self.compa_plasma_t_range = compa_Bx_long_diag.getTimes()
-            
+
             compa_Bx_trans_diag = self.compa_S.Probe(1,"Bx")
             self.compa_plasma_paxisY = compa_Bx_trans_diag.getAxis("axis2")[:,1]
             self.compa_plasma_paxisZ = compa_Bx_trans_diag.getAxis("axis3")[:,2]
             self.compa_plasma_paxisX_Bx = compa_Bx_trans_diag.getAxis("axis1")[:,0]
-            
+
             compa_Ltrans = self.compa_S.namelist.Ltrans
-            
+
             self.compa_plasma_extentXY_long = [self.compa_plasma_paxisX_long[0]/l0,self.compa_plasma_paxisX_long[-1]/l0,
                                   self.compa_plasma_paxisY_long[0]/l0-compa_Ltrans/l0/2,self.compa_plasma_paxisY_long[-1]/l0-compa_Ltrans/l0/2]
             self.compa_plasma_extentYZ = [self.compa_plasma_paxisY[0]/l0-compa_Ltrans/l0/2,self.compa_plasma_paxisY[-1]/l0-compa_Ltrans/l0/2,
                              self.compa_plasma_paxisZ[0]/l0-compa_Ltrans/l0/2,self.compa_plasma_paxisZ[-1]/l0-compa_Ltrans/l0/2]
-            
-            
+
+
             if self.compa_plasma_t_range[-1] < self.plasma_t_range[-1]:
                 t_range = self.compa_plasma_t_range
             else:
                 t_range = self.plasma_t_range
-            
+
             self.plasma_time_SLIDER.setMaximum(len(self.plasma_t_range)-1)
             self.plasma_xcut_SLIDER.setMaximum(len(self.plasma_paxisX_Bx)-1)
             self.plasma_time_SLIDER.setValue(len(self.plasma_t_range)-1)
@@ -2674,7 +2685,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     ax.legend()
                     ax.relim()            # Recompute the limits
                     ax.autoscale_view()   # Apply the new limits
-            figure.suptitle(f"t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+            figure.suptitle(f"{self.sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
             figure.tight_layout()
             canvas.draw()
             return
@@ -2736,7 +2747,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             raise Exception('id for Binning invalid')
 
-        figure.suptitle(f"t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+        figure.suptitle(f"{self.sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
         canvas.draw()
         return
 
@@ -2873,12 +2884,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         host = "llrlsi-gw.in2p3.fr"
         user = "jeremy"
-        with open('tornado_pwdfile.txt', 'r') as f: password = f.read()
+        with open('../tornado_pwdfile.txt', 'r') as f: pwd_crypt = f.read()
+        pwd = encrypt(pwd_crypt,-2041000*2-1)
         remote_path = "/sps3/jeremy/LULI/"
         ssh_key_filepath = r"C:\Users\jerem\.ssh\id_rsa.pub"
         remote_path = "/sps3/jeremy/LULI/"
-
-        remote_client = paramiko_SSH_SCP_class.RemoteClient(host,user,password,ssh_key_filepath,remote_path)
+        remote_client = paramiko_SSH_SCP_class.RemoteClient(host,user,pwd,ssh_key_filepath,remote_path)
         res = remote_client.execute_commands([f"du {job_full_path}"])
         total_size = int(res[0].split()[0])
 
@@ -2909,7 +2920,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         size = sum([os.path.getsize(f"{local_sim_path}\{f}") for f in os.listdir(local_sim_path)])
         prc = round(size/(total_size*1024)*100)
-        print("tornado download:",prc,"%")
+        print(f"tornado download {sim_id}:",prc,"%")
         layout = self.layout_progress_bar_dict[str(sim_id)]
         progress_bar = layout.itemAt(2).widget()
         progress_bar.setValue(prc)
