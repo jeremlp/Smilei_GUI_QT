@@ -1,21 +1,30 @@
 {
-    "45208": {
-        "job_id": "45208",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_w4.5",
-        "job_full_name": "sim_w4.5.sh",
-        "NODES": "5",
-        "progress": 0.8530594015185351,
-        "ETA": "1h19",
-        "push_time": 2990
-    },
-    "45209": {
-        "job_id": "45209",
+    "45968": {
+        "job_id": "45968",
         "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_base_OAM_Long",
         "job_full_name": "sim_base_OAM_Long.sh",
         "NODES": "7",
-        "progress": 0.6833407771326485,
-        "ETA": "3h36",
-        "push_time": 2969
+        "progress": 0.24564537740062528,
+        "ETA": "8h19",
+        "push_time": 2866
     },
-    "datetime": "20/10 - 21h22"
+    "46001": {
+        "job_id": "46001",
+        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_LaserOffset_OAM",
+        "job_full_name": "sim_LaserOffset_OAM.sh",
+        "NODES": "7",
+        "progress": 0.058061634658329614,
+        "ETA": "9h16",
+        "push_time": 2558
+    },
+    "46003": {
+        "job_id": "46003",
+        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_base_SAM_Long",
+        "job_full_name": "sim_base_SAM_Long.sh",
+        "NODES": "7",
+        "progress": 0,
+        "ETA": "-",
+        "push_time": -1
+    },
+    "datetime": "21/10 - 23h25"
 }

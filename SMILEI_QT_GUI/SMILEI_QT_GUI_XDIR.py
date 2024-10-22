@@ -203,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
-        self.SCRIPT_VERSION ='0.10.12 "Binning Compa & Trnd download"'
+        self.SCRIPT_VERSION ='0.10.13 "Binning Compa & Trnd download"'
         self.COPY_RIGHT = "Jeremy LA PORTE"
         self.spyder_default_stdout = sys.stdout
 
@@ -551,10 +551,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_Npart_EDIT = QtWidgets.QLineEdit("10")
         self.track_Npart_EDIT.setValidator(self.int_validator)
         self.track_Npart_EDIT.setMaximumWidth(45)
+
+        self.track_update_offset_CHECK = QtWidgets.QCheckBox("Update offsets")
+
         layoutNpart = self.creatPara("Npart=", self.track_Npart_EDIT,adjust_label=True)
 
         layoutTabSettingsTrackFile.addLayout(layoutNpart)
         layoutTabSettingsTrackFile.addWidget(self.track_file_BOX)
+        layoutTabSettingsTrackFile.addWidget(self.track_update_offset_CHECK)
 
         layoutTabSettings = QtWidgets.QVBoxLayout()
         layoutTabSettings.addLayout(layoutTabSettingsTrackFile)
@@ -969,6 +973,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_play_time_BUTTON.clicked.connect(lambda: self.onUpdateTabTrack(1000))
         self.track_file_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabTrack(-1))
         self.track_Npart_EDIT.returnPressed.connect(lambda:  self.onUpdateTabTrack(-1))
+        self.track_update_offset_CHECK.clicked.connect(lambda:  self.onUpdateTabTrack(-1))
 
         for i in range(len(self.plasma_check_list)):
             self.plasma_check_list[i].clicked.connect(partial(self.onUpdateTabPlasma,i))
@@ -1972,8 +1977,9 @@ class MainWindow(QtWidgets.QMainWindow):
             ax1.grid()
             ax1.legend()
             # im = ax2.imshow(Lz_interp,extent=extent_interp,cmap="RdYlBu")
-            vmax = 0.75*np.max(self.Lx_track[-1])
-            self.track_trans_distrib_im = ax2.scatter(self.y[0]/l0,self.z[0]/l0,c=self.Lx_track[-1],s=1,cmap="RdYlBu", vmin=-vmax,vmax=vmax)
+            vmax = 1.25*np.nanstd(self.Lx_track[-1])
+            # ax2.scatter(self.y[0],self.z[0],s=1)
+            self.track_trans_distrib_im = ax2.scatter(self.y[0]/l0,self.z[0]/l0,s=1, c=self.Lx_track[-1], vmin=-vmax,vmax=vmax, cmap="RdYlBu")
             self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
             self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
             self.figure_2.tight_layout()
@@ -1992,7 +1998,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 time_idx = self.track_time_SLIDER.sliderPosition()
                 self.track_time_EDIT.setText(str(round(self.track_t_range[time_idx]/l0,2)))
             self.track_trans_distrib_im.set_array(self.Lx_track[time_idx])
-            self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
+            if self.track_update_offset_CHECK.isChecked():
+                self.track_trans_distrib_im.set_offsets(np.c_[self.y[time_idx]/l0,self.z[time_idx]/l0])
+                self.track_radial_distrib_im.set_offsets(np.c_[self.r[time_idx]/l0,self.Lx_track[time_idx]])
+            else:
+                self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
             self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
             self.canvas_2.draw()
 
@@ -2005,9 +2015,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loop_in_process = True
             for time_idx in range(0,len(self.track_t_range),every_frame):
                 self.track_time_SLIDER.setValue(time_idx)
-                self.track_trans_distrib_im.set_offsets(np.c_[self.y[time_idx]/l0,self.z[time_idx]/l0])
+                if self.track_update_offset_CHECK.isChecked(): self.track_trans_distrib_im.set_offsets(np.c_[self.y[time_idx]/l0,self.z[time_idx]/l0])
                 self.track_trans_distrib_im.set_array(self.Lx_track[time_idx])
-                self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
+                if self.track_update_offset_CHECK.isChecked():
+                    self.track_trans_distrib_im.set_offsets(np.c_[self.y[time_idx]/l0,self.z[time_idx]/l0])
+                    self.track_radial_distrib_im.set_offsets(np.c_[self.r[time_idx]/l0,self.Lx_track[time_idx]])
+                else:
+                    self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
 
                 self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
                 self.canvas_2.draw()
@@ -2082,6 +2096,15 @@ class MainWindow(QtWidgets.QMainWindow):
                     ax = self.figure_3.add_subplot(1,Naxis,k+1)
                 else:
                     ax = self.figure_3.add_subplot(2,2,k+1)
+
+                if "_av" in self.plasma_names[i]: #if one average, take smallest t_range
+
+                    self.plasma_t_range = self.S.ParticleBinning("weight_av").getTimes()
+                    self.plasma_time_SLIDER.setMaximum(len(self.plasma_t_range)-1)
+                    self.plasma_time_SLIDER.setValue(len(self.plasma_t_range)-1)
+                    self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[-1]/l0,2)))
+                    time_idx = self.plasma_time_SLIDER.sliderPosition()
+
 
                 if "Bx" in self.plasma_names[i]:
                     cmap = "RdYlBu"
@@ -2407,12 +2430,12 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 t_range = self.plasma_t_range
 
-            self.plasma_time_SLIDER.setMaximum(len(self.plasma_t_range)-1)
-            self.plasma_xcut_SLIDER.setMaximum(len(self.plasma_paxisX_Bx)-1)
-            self.plasma_time_SLIDER.setValue(len(self.plasma_t_range)-1)
-            self.plasma_xcut_SLIDER.setValue(len(self.plasma_paxisX_Bx)-3)
-            self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[-1]/l0,2)))
-            self.plasma_xcut_EDIT.setText(str(round(self.plasma_paxisX_Bx[-3]/l0,2)))
+            # self.plasma_time_SLIDER.setMaximum(len(self.plasma_t_range)-1)
+            # self.plasma_xcut_SLIDER.setMaximum(len(self.plasma_paxisX_Bx)-1)
+            # self.plasma_time_SLIDER.setValue(len(self.plasma_t_range)-1)
+            # self.plasma_xcut_SLIDER.setValue(len(self.plasma_paxisX_Bx)-3)
+            # self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[-1]/l0,2)))
+            # self.plasma_xcut_EDIT.setText(str(round(self.plasma_paxisX_Bx[-3]/l0,2)))
 
             self.compa_plasma_time_SLIDER.setMaximum(len(t_range)-1)
             self.compa_plasma_xcut_SLIDER.setMaximum(len(self.plasma_paxisX_Bx)-1)
@@ -2601,7 +2624,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
                         if diag_name=="Lx_r":
                             x_range = diag.getAxis("user_function0")
+                            idx = round(0.3*binning_data.shape[0]) #Average over 30 - 70% of the range to remove transiant effects
                             ax.set_xlabel("$r/\lambda$")
+                            m = np.nanmean(binning_data[idx:-idx],axis=0)
+                            std = np.nanstd(binning_data[idx:-idx],axis=0)
+                            ax.fill_between(x_range/self.l0, m-std, m+std, color="gray",alpha=0.25)
+                            ax.plot(x_range/self.l0,m, "k--",label=diag_name+" time average")
+                            if is_compa:
+                                m = np.nanmean(binning_data2[idx:-idx],axis=0)
+                                ax.plot(x_range/self.l0, m, ".-", color="stategray",label=diag_name+"_compa time average")
+
+
 
                         ax.set_ylabel("$L_x$")
                         binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
