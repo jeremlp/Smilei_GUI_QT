@@ -203,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
-        self.SCRIPT_VERSION ='0.10.13 "Binning Compa & Trnd download"'
+        self.SCRIPT_VERSION ='0.11 - Plasma Averaged'
         self.COPY_RIGHT = "Jeremy LA PORTE"
         self.spyder_default_stdout = sys.stdout
 
@@ -425,7 +425,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fontsize = 12
 
         self.scalar_check_list = []
-        self.scalar_names = ["Utot","Uelm", "Ukin","AM", "Uelm/Utot"]
+        self.scalar_names = ["Utot","Uelm", "Ukin","AM", "Uelm/Utot","α_abs"]
         layoutTabSettingsCheck = QtWidgets.QHBoxLayout()
         for name in self.scalar_names:
             check = QtWidgets.QCheckBox(name)
@@ -488,8 +488,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sim_cut_direction_BOX = QtWidgets.QComboBox()
         self.sim_cut_direction_BOX.addItem("Longitudinal cut")
         self.sim_cut_direction_BOX.addItem("Transverse cut")
+        
+        self.fields_use_autoscale_CHECK = QtWidgets.QCheckBox("Use autoscale")
+        
         layoutTabSettingsCutDirection = QtWidgets.QHBoxLayout()
         layoutTabSettingsCutDirection.addWidget(self.sim_cut_direction_BOX)
+        layoutTabSettingsCutDirection.addWidget(self.fields_use_autoscale_CHECK)
+
 
         layoutTabSettings = QtWidgets.QVBoxLayout()
         layoutTabSettings.addLayout(layoutTabSettingsCheck)
@@ -596,7 +601,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plt_toolbar_3.setFixedHeight(self.toolBar_height)
 
         layoutTabSettingsCheck = QtWidgets.QHBoxLayout()
-        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx","Lx_trans","pθ","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans", "Ekin", "Ekin_trans"]
+        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx_av","Lx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans", "Ekin", "Ekin_trans"]
         self.plasma_check_list = []
         for i, name in enumerate(self.plasma_names):
             plasma_CHECK = QtWidgets.QCheckBox(name)
@@ -1100,7 +1105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.is_sim_loaded:
             print(self.sim_directory_path)
             clipboard = QtWidgets.QApplication.clipboard()
-            text = f"""module_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')"""
+            text = f"""importsys\nimport numpy as np\n import matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
             clipboard.setText(text)
             # self.sim_directory_name_LABEL.setStyleSheet("background-color: lightgreen")
             # app.processEvents
@@ -1592,25 +1597,33 @@ class MainWindow(QtWidgets.QMainWindow):
         if boolList[check_id] == True: # Was False before and has been selected
             if self.scalar_names[check_id] == "Uelm/Utot":
                 data = np.array(self.S.Scalar("Uelm").getData())/(np.array(self.S.Scalar("Utot").getData())+1e-12)
-                ax.plot(self.scalar_t_range/l0, data,
+                ax.plot(self.scalar_t_range[10:]/l0, data[10:],
                               label=self.scalar_names[check_id], ls="-",color = f"C{len(ax.get_lines())}")
-                ax.legend()
 
-                # self.writeToFileCompa(self.sim_directory_path,"Uelm_over_Utot",np.vstack([self.scalar_t_range, data]).T)
                 if is_compa and self.is_compa_sim_loaded:
                     # data_file = np.loadtxt(f"{self.compa_sim_directory_path}/data_Uelm_over_Utot.npy")
                     # data_t_range, data = data_file[:,0], data_file[:,1]
                     data_compa = np.array(self.compa_S.Scalar("Uelm").getData())/(np.array(self.compa_S.Scalar("Utot").getData())+1e-12)
                     data_t_range_compa = self.compa_S.Scalar("Uelm").getTimes()
-                    ax.plot(data_t_range_compa/l0, data_compa,
+                    ax.plot(data_t_range_compa[10:]/l0, data_compa[10:],
                               label=f"{self.scalar_names[check_id]}", ls="--",color = f"C{len(ax.get_lines())}")
-
+            
+            elif self.scalar_names[check_id] =="α_abs":
+                data = np.gradient(np.array(np.array(self.S.Scalar("Uelm").getData())/(np.array(self.S.Scalar("Utot").getData())+1e-12)),self.scalar_t_range/l0)
+                ax.plot(self.scalar_t_range/l0, data*1000,
+                              label=self.scalar_names[check_id], ls="-",color = f"C{len(ax.get_lines())}")
+                alpha_theo = -0.5*self.ne/(self.Tp/2/l0)*1000
+                ax.axhline(alpha_theo,ls="--",color="k",alpha=0.5, label=r"$\alpha_{abs}$ theo")
+                if is_compa and self.is_compa_sim_loaded:
+                    data_t_range_compa = self.compa_S.Scalar("Uelm").getTimes()
+                    data_compa =  np.gradient(np.array(self.compa_S.Scalar("Uelm").getData())/(np.array(self.compa_S.Scalar("Utot").getData())+1e-12),data_t_range_compa/l0)
+                    ax.plot(data_t_range_compa/l0, data_compa*1000,
+                                  label=self.scalar_names[check_id], ls="--",color = f"C{len(ax.get_lines())}")
 
             elif self.scalar_names[check_id] != "AM":
                 data = np.array(self.S.Scalar(self.scalar_names[check_id]).getData())
                 ax.plot(self.scalar_t_range/l0, data,
                               label=self.scalar_names[check_id], color = f"C{len(ax.get_lines())}")
-                ax.legend()
                 # self.writeToFileCompa(self.sim_directory_path, self.scalar_names[check_id],np.vstack([self.scalar_t_range, data]).T)
                 if is_compa and self.is_compa_sim_loaded:
                     #data_file = np.loadtxt(f"{self.compa_sim_directory_path}/data_{self.scalar_names[check_id]}.npy")
@@ -1709,7 +1722,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     im = ax.imshow(fields_data_list[k][time_idx,x_idx,:,:].T,cmap="RdBu", aspect="auto",
                                    extent=self.extentYZ,origin='lower', interpolation="spline16")
                     ax.set_title(self.fields_names[i])
-                im.autoscale()
+                if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
                 self.figure_1.colorbar(im, ax=ax,pad=0.01)
                 self.fields_image_list.append(im)
                 k+=1
@@ -1829,11 +1842,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,:,:,self.fields_trans_mid_idx].T)
                         self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
-                        im.autoscale()
+                        if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
             else:
                 for i,im in enumerate(self.fields_image_list):
                     im.set_data(self.fields_data_list[i][time_idx,xcut_idx,:,:].T)
-                    # im.autoscale()
+                    if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
                     self.figure_1.suptitle(f"$t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$")
             self.canvas_1.draw()
 
@@ -1854,7 +1867,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,xcut_idx,:,:].T)
-                        # im.autoscale()
+                        if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
                 self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$")
                 self.canvas_1.draw()
                 time.sleep(0.05)
@@ -2071,7 +2084,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
         only_trans = sum(["trans" in name for name in selected_plasma_names]) == Naxis
         only_long = sum(["trans" in name for name in selected_plasma_names]) == 0
-
+        contains_av = sum(["_av" in name for name in selected_plasma_names]) != 0
+        print("contains_av:",contains_av)
+        
+        if contains_av: #if contains averaged quantities, change slider range
+            self.effective_plasma_t_range = self.av_plasma_t_range
+        else:
+            self.effective_plasma_t_range = self.plasma_t_range
+        
+        self.plasma_time_SLIDER.setMaximum(len(self.effective_plasma_t_range)-1)
+        self.plasma_time_SLIDER.setValue(len(self.effective_plasma_t_range)-1)
+        self.plasma_time_EDIT.setText(str(round(self.effective_plasma_t_range[-1]/l0,2)))
+        
         ne = self.S.namelist.ne
         VMAX_Bx = 0.001*self.toTesla*self.a0*ne/0.01 #1 = 10709T
         vmax_ptheta = 0.005
@@ -2082,12 +2106,11 @@ class MainWindow(QtWidgets.QMainWindow):
         if len(self.figure_3.axes) !=0:
             for ax in self.figure_3.axes: ax.remove()
 
-        time_idx = self.plasma_time_SLIDER.sliderPosition()
+        slider_time_idx = self.plasma_time_SLIDER.sliderPosition()
         x_idx = self.plasma_xcut_SLIDER.sliderPosition()
         k=0
         for i in range(len(self.plasma_names)):
             if boolList[i]:
-                print(i,k,self.plasma_names[i])
                 if only_trans:
                     ax = self.figure_3.add_subplot(1,Naxis,k+1)
                 elif only_long:
@@ -2096,16 +2119,15 @@ class MainWindow(QtWidgets.QMainWindow):
                     ax = self.figure_3.add_subplot(1,Naxis,k+1)
                 else:
                     ax = self.figure_3.add_subplot(2,2,k+1)
-
-                if "_av" in self.plasma_names[i]: #if one average, take smallest t_range
-
-                    self.plasma_t_range = self.S.ParticleBinning("weight_av").getTimes()
-                    self.plasma_time_SLIDER.setMaximum(len(self.plasma_t_range)-1)
-                    self.plasma_time_SLIDER.setValue(len(self.plasma_t_range)-1)
-                    self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[-1]/l0,2)))
-                    time_idx = self.plasma_time_SLIDER.sliderPosition()
-
-
+                
+                if "_av" not in self.plasma_names[i] and contains_av:
+                    current_time = self.av_plasma_t_range[slider_time_idx]
+                    new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
+                    print(slider_time_idx, new_time_idx)
+                    time_idx = new_time_idx
+                else: time_idx = slider_time_idx
+                    
+                
                 if "Bx" in self.plasma_names[i]:
                     cmap = "RdYlBu"
                     vmin = -VMAX_Bx
@@ -2132,6 +2154,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     data = self.plasma_data_list[k][time_idx,x_idx,:,:]
                 else:
                     extent = self.plasma_extentXY_long
+                    print(self.plasma_data_list[k].shape)
                     data = self.plasma_data_list[k][time_idx].T
 
                 im = ax.imshow(data, aspect="auto",
@@ -2141,7 +2164,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.figure_3.colorbar(im, ax=ax,pad=0.01)
                 self.plasma_image_list.append(im)
                 k+=1
-        self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.plasma_t_range[time_idx]/l0:.2f}~t_0$")
+        self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.effective_plasma_t_range[slider_time_idx]/l0:.2f}~t_0$")
         for w in range(10):
             self.figure_3.tight_layout()
             self.figure_3.tight_layout()
@@ -2180,6 +2203,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plasma_paxisX_long = Bx_long_diag.getAxis("axis1")[:,0]
             self.plasma_paxisY_long = Bx_long_diag.getAxis("axis2")[:,1]
             self.plasma_t_range = Bx_long_diag.getTimes()
+            self.av_plasma_t_range = self.S.ParticleBinning("weight_av").getTimes()
+
 
             Bx_trans_diag = self.S.Probe(1,"Bx")
             self.plasma_paxisY = Bx_trans_diag.getAxis("axis2")[:,1]
@@ -2224,14 +2249,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loadthread.start()
 
         elif check_id <= 210: #SLIDER UPDATE
+            boolList = [check.isChecked() for check in self.plasma_check_list]
+            selected_plasma_names = np.array(self.plasma_names)[boolList]
+            contains_av = sum(["_av" in name for name in selected_plasma_names]) != 0
+            slider_time_idx = self.plasma_time_SLIDER.sliderPosition()
+            
             if check_id == 101: #QLineEdit time
                 time_edit_value = float(self.plasma_time_EDIT.text())
-                time_idx = np.where(abs(self.plasma_t_range/l0-time_edit_value)==np.min(abs(self.plasma_t_range/l0-time_edit_value)))[0][0]
+                time_idx = np.where(abs(self.effective_plasma_t_range/l0-time_edit_value)==np.min(abs(self.effective_plasma_t_range/l0-time_edit_value)))[0][0]
                 self.plasma_time_SLIDER.setValue(time_idx)
-                self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[time_idx]/l0,2)))
+                self.plasma_time_EDIT.setText(str(round(self.effective_plasma_t_range[time_idx]/l0,2)))
             else:
-                time_idx = self.plasma_time_SLIDER.sliderPosition()
-                self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[time_idx]/l0,2)))
+                time_idx = slider_time_idx
+                self.plasma_time_EDIT.setText(str(round(self.effective_plasma_t_range[time_idx]/l0,2)))
 
             if check_id == 201: #QLineEdit zcut
                 xcut_edit_value = float(self.plasma_xcut_EDIT.text())
@@ -2241,42 +2271,52 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 xcut_idx = self.plasma_xcut_SLIDER.sliderPosition()
                 self.plasma_xcut_EDIT.setText(str(round(self.plasma_paxisX_Bx[xcut_idx]/l0,2)))
+                
 
             for i,im in enumerate(self.plasma_image_list):
-
-                boolList = [check.isChecked() for check in self.plasma_check_list]
-                selected_plasma_names = np.array(self.plasma_names)[boolList]
+                if "_av" not in selected_plasma_names[i] and contains_av:
+                    current_time = self.av_plasma_t_range[time_idx]
+                    new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
+                    print(time_idx, new_time_idx)
+                    time_idx = new_time_idx
+                else: time_idx = self.plasma_time_SLIDER.sliderPosition()
+                
                 if "_trans" in selected_plasma_names[i]:
                     im.set_data(self.plasma_data_list[i][time_idx,xcut_idx,:,:])
                     self.figure_3.axes[i*2].set_title(f"{selected_plasma_names[i]} ($x={self.plasma_paxisX_Bx[xcut_idx]/l0:.1f}~\lambda$)")
                 else:
                     im.set_data(self.plasma_data_list[i][time_idx].T)
 
-            self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.plasma_t_range[time_idx]/l0:.2f}~t_0$")
+            self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.effective_plasma_t_range[slider_time_idx]/l0:.2f}~t_0$")
             self.canvas_3.draw()
 
         elif check_id == 1000 :
-
             if self.loop_in_process: return
-
             self.loop_in_process = True
-
+            boolList = [check.isChecked() for check in self.plasma_check_list]
+            selected_plasma_names = np.array(self.plasma_names)[boolList]
+            contains_av = sum(["_av" in name for name in selected_plasma_names]) != 0
             xcut_idx = self.plasma_xcut_SLIDER.sliderPosition()
-            for time_idx in range(len(self.plasma_t_range)):
-                self.plasma_time_SLIDER.setValue(time_idx)
-                self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[time_idx]/self.l0,2)))
+            for slider_time_idx in range(len(self.effective_plasma_t_range)):
+                self.plasma_time_SLIDER.setValue(slider_time_idx)
+                self.plasma_time_EDIT.setText(str(round(self.plasma_t_range[slider_time_idx]/self.l0,2)))
+
+
                 for i,im in enumerate(self.plasma_image_list):
-
-                    boolList = [check.isChecked() for check in self.plasma_check_list]
-                    selected_plasma_names = np.array(self.plasma_names)[boolList]
-
+                    if "_av" not in selected_plasma_names[i] and contains_av:
+                        current_time = self.av_plasma_t_range[time_idx]
+                        new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
+                        print(time_idx, new_time_idx)
+                        time_idx = new_time_idx
+                    else: time_idx = slider_time_idx
+                
                     if "_trans" in selected_plasma_names[i]:
                         im.set_data(self.plasma_data_list[i][time_idx,xcut_idx,:,:].T)
                         self.figure_3.axes[i*2].set_title(f"{selected_plasma_names[i]} ($x={self.plasma_paxisX_Bx[xcut_idx]/l0:.1f}~\lambda$)")
                     else:
                         im.set_data(self.plasma_data_list[i][time_idx,:,:].T)
 
-                self.figure_3.suptitle(f"{self.sim_directory_name} | t={self.plasma_t_range[time_idx]/self.l0:.2f}$~t_0$")
+                self.figure_3.suptitle(f"{self.sim_directory_name} | t={self.effective_plasma_t_range[slider_time_idx]/self.l0:.2f}$~t_0$")
                 self.canvas_3.draw()
                 time.sleep(0.01)
                 app.processEvents()
@@ -2390,7 +2430,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.INIT_tabPlasma == None or self.is_sim_loaded == False:
             # Popup().showError("Simulation not loaded")
             return
-        if check_id < 10:
+        if check_id < 20:
             l0 = 2*pi
             Bx_long_diag = self.S.Probe(2,"Bx")
             self.plasma_paxisX_long = Bx_long_diag.getAxis("axis1")[:,0]
@@ -2459,7 +2499,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             print("==== INIT PLASMA VAR FOR COMPA ====")
 
-        if check_id < 10:
+        if check_id < 20:
             self.call_compa_ThreadGetPlasmaProbeData(check_id)
 
         elif check_id <= 210: #SLIDER UPDATE
@@ -2632,15 +2672,21 @@ class MainWindow(QtWidgets.QMainWindow):
                             ax.plot(x_range/self.l0,m, "k--",label=diag_name+" time average")
                             if is_compa:
                                 m = np.nanmean(binning_data2[idx:-idx],axis=0)
-                                ax.plot(x_range/self.l0, m, ".-", color="stategray",label=diag_name+"_compa time average")
-
-
-
+                                ax.plot(x_range/self.l0, m, "-.", color="slategray",label=diag_name+"_compa time average")
                         ax.set_ylabel("$L_x$")
                         binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
                         if is_compa: binning_image2, = ax.plot(x_range/self.l0,binning_data2[time_idx], label=diag_name+"_compa")
-
+                    elif diag_name == "weight_r":
+                        r_range = np.array(diag.getAxis("y"))
+                        idx_x = round(len(r_range)*0.25)
+                        weight_lineout = np.mean(binning_data[-1,idx_x:-idx_x],axis=0)/self.ne
+                        binning_image, = ax.plot(r_range/self.l0,weight_lineout, label=diag_name)
+                        ax.set_xlabel("$r/\lambda$")
+                        ax.set_xlabel("$n_e/n_c$")
+                        if is_compa: 
+                            weight_lineout2 = np.mean(binning_data2[-1,idx_x:-idx_x],axis=0)/self.ne
+                            binning_image2, =  ax.plot(r_range/self.l0,weight_lineout2, label=diag_name+"_compa")
                     else:
                         binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
