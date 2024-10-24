@@ -203,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
-        self.SCRIPT_VERSION ='0.11 - Plasma Averaged'
+        self.SCRIPT_VERSION ='0.11.0 - Plasma Averaged'
         self.COPY_RIGHT = "Jeremy LA PORTE"
         self.spyder_default_stdout = sys.stdout
 
@@ -1105,7 +1105,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.is_sim_loaded:
             print(self.sim_directory_path)
             clipboard = QtWidgets.QApplication.clipboard()
-            text = f"""importsys\nimport numpy as np\n import matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
+            text = f"""import sys\nimport numpy as np\nimport matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
             clipboard.setText(text)
             # self.sim_directory_name_LABEL.setStyleSheet("background-color: lightgreen")
             # app.processEvents
@@ -2678,12 +2678,12 @@ class MainWindow(QtWidgets.QMainWindow):
                         binning_image_list.append(binning_image)
                         if is_compa: binning_image2, = ax.plot(x_range/self.l0,binning_data2[time_idx], label=diag_name+"_compa")
                     elif diag_name == "weight_r":
-                        r_range = np.array(diag.getAxis("y"))
-                        idx_x = round(len(r_range)*0.25)
-                        weight_lineout = np.mean(binning_data[-1,idx_x:-idx_x],axis=0)/self.ne
-                        binning_image, = ax.plot(r_range/self.l0,weight_lineout, label=diag_name)
+                        r_range = np.array(diag.getAxis("user_function0"))
+                        idx_x = round(len(x_range)*0.25)
+                        # weight_lineout = np.mean(binning_data[-1,idx_x:-idx_x],axis=0)/self.ne
+                        binning_image, = ax.plot(r_range/self.l0,binning_data[time_idx], label=diag_name)
                         ax.set_xlabel("$r/\lambda$")
-                        ax.set_xlabel("$n_e/n_c$")
+                        ax.set_ylabel("$n_e/n_c$")
                         if is_compa: 
                             weight_lineout2 = np.mean(binning_data2[-1,idx_x:-idx_x],axis=0)/self.ne
                             binning_image2, =  ax.plot(r_range/self.l0,weight_lineout2, label=diag_name+"_compa")
