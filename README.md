@@ -1,4 +1,4 @@
-# SMILEI_QT_GUI V0.10
+# SMILEI_QT_GUI V0.11
 Graphical User Interface for Smilei PIC code analysis.
 
 
