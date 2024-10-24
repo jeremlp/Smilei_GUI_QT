@@ -203,7 +203,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
-        self.SCRIPT_VERSION ='0.11.0 - Plasma Averaged'
+        self.SCRIPT_VERSION ='0.11.2 - Plasma Averaged'
         self.COPY_RIGHT = "Jeremy LA PORTE"
         self.spyder_default_stdout = sys.stdout
 
@@ -488,9 +488,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sim_cut_direction_BOX = QtWidgets.QComboBox()
         self.sim_cut_direction_BOX.addItem("Longitudinal cut")
         self.sim_cut_direction_BOX.addItem("Transverse cut")
-        
+
         self.fields_use_autoscale_CHECK = QtWidgets.QCheckBox("Use autoscale")
-        
+
         layoutTabSettingsCutDirection = QtWidgets.QHBoxLayout()
         layoutTabSettingsCutDirection.addWidget(self.sim_cut_direction_BOX)
         layoutTabSettingsCutDirection.addWidget(self.fields_use_autoscale_CHECK)
@@ -551,6 +551,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_file_BOX = QtWidgets.QComboBox()
         self.track_file_BOX.addItem("track_eon")
         self.track_file_BOX.addItem("track_eon_full")
+        self.track_file_BOX.addItem("track_eon_dense")
 
         layoutTabSettingsTrackFile = QtWidgets.QHBoxLayout()
         self.track_Npart_EDIT = QtWidgets.QLineEdit("10")
@@ -601,7 +602,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plt_toolbar_3.setFixedHeight(self.toolBar_height)
 
         layoutTabSettingsCheck = QtWidgets.QHBoxLayout()
-        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx_av","Lx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans", "Ekin", "Ekin_trans"]
+        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx_av","Lx_trans","jx_av","jx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans","Rho", "Rho_trans","Ekin", "Ekin_trans"]
         self.plasma_check_list = []
         for i, name in enumerate(self.plasma_names):
             plasma_CHECK = QtWidgets.QCheckBox(name)
@@ -1105,7 +1106,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.is_sim_loaded:
             print(self.sim_directory_path)
             clipboard = QtWidgets.QApplication.clipboard()
-            text = f"""import sys\nimport numpy as np\nimport matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
+            text = f"""import os\nimport sys\nimport numpy as np\nimport matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
             clipboard.setText(text)
             # self.sim_directory_name_LABEL.setStyleSheet("background-color: lightgreen")
             # app.processEvents
@@ -1607,7 +1608,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     data_t_range_compa = self.compa_S.Scalar("Uelm").getTimes()
                     ax.plot(data_t_range_compa[10:]/l0, data_compa[10:],
                               label=f"{self.scalar_names[check_id]}", ls="--",color = f"C{len(ax.get_lines())}")
-            
+
             elif self.scalar_names[check_id] =="α_abs":
                 data = np.gradient(np.array(np.array(self.S.Scalar("Uelm").getData())/(np.array(self.S.Scalar("Utot").getData())+1e-12)),self.scalar_t_range/l0)
                 ax.plot(self.scalar_t_range/l0, data*1000,
@@ -2086,16 +2087,16 @@ class MainWindow(QtWidgets.QMainWindow):
         only_long = sum(["trans" in name for name in selected_plasma_names]) == 0
         contains_av = sum(["_av" in name for name in selected_plasma_names]) != 0
         print("contains_av:",contains_av)
-        
+
         if contains_av: #if contains averaged quantities, change slider range
             self.effective_plasma_t_range = self.av_plasma_t_range
         else:
             self.effective_plasma_t_range = self.plasma_t_range
-        
+
         self.plasma_time_SLIDER.setMaximum(len(self.effective_plasma_t_range)-1)
         self.plasma_time_SLIDER.setValue(len(self.effective_plasma_t_range)-1)
         self.plasma_time_EDIT.setText(str(round(self.effective_plasma_t_range[-1]/l0,2)))
-        
+
         ne = self.S.namelist.ne
         VMAX_Bx = 0.001*self.toTesla*self.a0*ne/0.01 #1 = 10709T
         vmax_ptheta = 0.005
@@ -2119,15 +2120,15 @@ class MainWindow(QtWidgets.QMainWindow):
                     ax = self.figure_3.add_subplot(1,Naxis,k+1)
                 else:
                     ax = self.figure_3.add_subplot(2,2,k+1)
-                
+
                 if "_av" not in self.plasma_names[i] and contains_av:
                     current_time = self.av_plasma_t_range[slider_time_idx]
                     new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
                     print(slider_time_idx, new_time_idx)
                     time_idx = new_time_idx
                 else: time_idx = slider_time_idx
-                    
-                
+
+
                 if "Bx" in self.plasma_names[i]:
                     cmap = "RdYlBu"
                     vmin = -VMAX_Bx
@@ -2253,7 +2254,7 @@ class MainWindow(QtWidgets.QMainWindow):
             selected_plasma_names = np.array(self.plasma_names)[boolList]
             contains_av = sum(["_av" in name for name in selected_plasma_names]) != 0
             slider_time_idx = self.plasma_time_SLIDER.sliderPosition()
-            
+
             if check_id == 101: #QLineEdit time
                 time_edit_value = float(self.plasma_time_EDIT.text())
                 time_idx = np.where(abs(self.effective_plasma_t_range/l0-time_edit_value)==np.min(abs(self.effective_plasma_t_range/l0-time_edit_value)))[0][0]
@@ -2271,7 +2272,7 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 xcut_idx = self.plasma_xcut_SLIDER.sliderPosition()
                 self.plasma_xcut_EDIT.setText(str(round(self.plasma_paxisX_Bx[xcut_idx]/l0,2)))
-                
+
 
             for i,im in enumerate(self.plasma_image_list):
                 if "_av" not in selected_plasma_names[i] and contains_av:
@@ -2280,7 +2281,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     print(time_idx, new_time_idx)
                     time_idx = new_time_idx
                 else: time_idx = self.plasma_time_SLIDER.sliderPosition()
-                
+
                 if "_trans" in selected_plasma_names[i]:
                     im.set_data(self.plasma_data_list[i][time_idx,xcut_idx,:,:])
                     self.figure_3.axes[i*2].set_title(f"{selected_plasma_names[i]} ($x={self.plasma_paxisX_Bx[xcut_idx]/l0:.1f}~\lambda$)")
@@ -2309,7 +2310,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         print(time_idx, new_time_idx)
                         time_idx = new_time_idx
                     else: time_idx = slider_time_idx
-                
+
                     if "_trans" in selected_plasma_names[i]:
                         im.set_data(self.plasma_data_list[i][time_idx,xcut_idx,:,:].T)
                         self.figure_3.axes[i*2].set_title(f"{selected_plasma_names[i]} ($x={self.plasma_paxisX_Bx[xcut_idx]/l0:.1f}~\lambda$)")
@@ -2620,6 +2621,37 @@ class MainWindow(QtWidgets.QMainWindow):
             binning_data_list = []
 
             for diag_name in diag_name_list:
+
+                if diag_name == "weight_r":
+                    diag = self.S.ParticleBinning("weight_av")
+                    x_range = np.array(diag.getAxis("x"))
+                    y_range = np.array(diag.getAxis("y"))-self.Ltrans/2
+                    t_range = diag.getTimes()
+                    time_slider.setMaximum(len(t_range)-1)
+                    time_slider.setValue(len(t_range)-1)
+                    time_idx = -1
+                    idx_x = round(len(x_range)*0.25)
+
+                    binning_data = np.mean(np.array(diag.getData()),axis=-1)
+                    binning_data = np.mean(binning_data[:,:-idx_x],axis=1)/self.ne
+
+                    binning_image, = ax.plot(y_range/self.l0,binning_data[-1], label=diag_name)
+                    ax.set_xlabel("$y/\lambda$")
+                    ax.set_ylabel("$n_e/n_c$")
+                    self.binning_t_range = t_range
+
+                    if is_compa:
+                        diag2 = self.compa_S.ParticleBinning("weight_av")
+                        binning_data2 = np.mean(np.array(diag2.getData()),axis=-1)
+                        x_range2 = np.array(diag2.getAxis("x"))
+                        idx_x2 = round(len(x_range2)*0.25)
+                        y_range2 = np.array(diag2.getAxis("y"))-self.compa_S.namelist.Ltrans/2
+                        binning_data2 = np.mean(binning_data2[:,:-idx_x2],axis=1)/self.ne
+                        binning_image2, =  ax.plot(y_range2/self.l0,binning_data2[-1], label=diag_name+"_compa")
+                        self.compa_binning_t_range = t_range
+                    break
+
+
                 try:
                     diag = self.S.ParticleBinning(diag_name)
                     binning_data = np.array(diag.getData())
@@ -2637,9 +2669,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 time_slider.setMaximum(len(t_range)-1)
                 time_slider.setValue(len(t_range)-1)
                 time_idx = -1
-                if not is_compa:
-                    self.binning_t_range = t_range
-                else:
+                self.binning_t_range = t_range
+                if is_compa:
                     self.compa_binning_t_range = t_range
 
                 if binning_data.ndim == 1: # function of time only
@@ -2677,16 +2708,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
                         if is_compa: binning_image2, = ax.plot(x_range/self.l0,binning_data2[time_idx], label=diag_name+"_compa")
-                    elif diag_name == "weight_r":
-                        r_range = np.array(diag.getAxis("user_function0"))
-                        idx_x = round(len(x_range)*0.25)
-                        # weight_lineout = np.mean(binning_data[-1,idx_x:-idx_x],axis=0)/self.ne
-                        binning_image, = ax.plot(r_range/self.l0,binning_data[time_idx], label=diag_name)
-                        ax.set_xlabel("$r/\lambda$")
-                        ax.set_ylabel("$n_e/n_c$")
-                        if is_compa: 
-                            weight_lineout2 = np.mean(binning_data2[-1,idx_x:-idx_x],axis=0)/self.ne
-                            binning_image2, =  ax.plot(r_range/self.l0,weight_lineout2, label=diag_name+"_compa")
+
                     else:
                         binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
