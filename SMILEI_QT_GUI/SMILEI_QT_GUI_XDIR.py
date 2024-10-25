@@ -601,9 +601,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plt_toolbar_3 = NavigationToolbar(self.canvas_3, self)
         self.plt_toolbar_3.setFixedHeight(self.toolBar_height)
 
-        layoutTabSettingsCheck = QtWidgets.QHBoxLayout()
+        layoutTabSettingsCheck = QtWidgets.QGridLayout()
         self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx_av","Lx_trans","jx_av","jx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans","Rho", "Rho_trans","Ekin", "Ekin_trans"]
         self.plasma_check_list = []
+        N_plasma = len(self.plasma_names)
+        print("len plasma:", N_plasma)
         for i, name in enumerate(self.plasma_names):
             plasma_CHECK = QtWidgets.QCheckBox(name)
             self.plasma_check_list.append(plasma_CHECK)
@@ -613,7 +615,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 # separator1.setFrameShape(QtWidgets.QFrame.VLine)
                 # separator1.setLineWidth(1)
                 # layoutTabSettingsCheck.addWidget(separator1)
-            layoutTabSettingsCheck.addWidget(plasma_CHECK)
+            print(i, i%(N_plasma//2))
+            layoutTabSettingsCheck.addWidget(plasma_CHECK, int(i>=len(self.plasma_names)//2),i%(N_plasma//2))
 
         # layoutTabSettingsCheck.addStretch(50)
         layoutTabSettingsCheck.setContentsMargins(0, 0, 0, 0)
@@ -761,18 +764,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         #-------------- COMPA PLASMA Groupbox -----------------
-        layoutCompaTabSettingsCheck = QtWidgets.QHBoxLayout()
+        layoutCompaTabSettingsCheck = QtWidgets.QGridLayout()
         self.compa_plasma_check_list = []
         for i,name in enumerate(self.plasma_names):
             compa_plasma_RADIO = QtWidgets.QRadioButton(name)
             self.compa_plasma_check_list.append(compa_plasma_RADIO)
 
-            if i%2==0 and i>0:
-                separator1 = QtWidgets.QFrame()
-                separator1.setFrameShape(QtWidgets.QFrame.VLine)
-                separator1.setLineWidth(1)
-                layoutCompaTabSettingsCheck.addWidget(separator1)
-            layoutCompaTabSettingsCheck.addWidget(compa_plasma_RADIO)
+            # if i%2==0 and i>0:
+            #     separator1 = QtWidgets.QFrame()
+            #     separator1.setFrameShape(QtWidgets.QFrame.VLine)
+            #     separator1.setLineWidth(1)
+                # layoutCompaTabSettingsCheck.addWidget(separator1)
+            layoutCompaTabSettingsCheck.addWidget(compa_plasma_RADIO, int(i>=N_plasma//2),i%(N_plasma//2))
+
+            # layoutCompaTabSettingsCheck.addWidget(compa_plasma_RADIO)
 
         self.compa_plasma_time_SLIDER = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.compa_plasma_time_SLIDER.setRange(0,1)
@@ -1525,7 +1530,6 @@ class MainWindow(QtWidgets.QMainWindow):
         fields_t_range = self.S.Probe(0,"Ex").getTimes()
         AM_tot = np.max(AM_full_int)
 
-
         figure = canvas.figure
         ax = figure.axes[0]
         ax.plot(fields_t_range/self.l0, AM_full_int,label="AM", ls="-", c=f"C{len(ax.get_lines())}")
@@ -1550,6 +1554,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # print(f"AM/U={AM_tot/self.Uelm_tot_max:.2f}")
         # print(f"Scalar time plot \nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ")
         figure.suptitle(f"{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
+        if is_compa:
+            figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
+
         ax.relim()            # Recompute the limits based on current data
         ax.autoscale_view()   # Apply the new limits
         figure.tight_layout()
@@ -1572,7 +1579,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ax0.set_xlabel("t/t0",fontsize=14)
             self.ax4_scalar.grid()
             self.ax4_scalar.set_xlabel("t/t0",fontsize=14)
-
 
             print("===== INIT SCALAR =====")
 
@@ -1677,6 +1683,9 @@ class MainWindow(QtWidgets.QMainWindow):
         # hfont = {'fontname':'Helvetica'}
 
         figure.suptitle(f"""{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ""",fontsize=14)
+        if is_compa:
+            figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
+
         figure.tight_layout()
         canvas.draw()
         # t1 = time.perf_counter()
@@ -2098,6 +2107,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plasma_time_EDIT.setText(str(round(self.effective_plasma_t_range[-1]/l0,2)))
 
         ne = self.S.namelist.ne
+        self.toTesla = 10709
+
         VMAX_Bx = 0.001*self.toTesla*self.a0*ne/0.01 #1 = 10709T
         vmax_ptheta = 0.005
 
@@ -2384,6 +2395,10 @@ class MainWindow(QtWidgets.QMainWindow):
             cmap = "jet"
             vmin = 0
             vmax = 3
+        elif "Ekin" in self.selected_plasma_name:
+            cmap = "smilei"
+            vmin = 0
+            vmax = 0.1
         else:
             cmap = "RdYlBu"
             vmin = -0.1*np.max(np.abs(self.compa_plasma_data[time_idx]))
@@ -2755,7 +2770,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         if is_compa: binning_image2 = ax2.imshow(data2[time_idx].T, extent=extent, cmap="smilei",aspect="auto", origin="lower")
                         ax.set_xlabel("$x/\lambda$")
                         ax.set_ylabel("Lx")
-                    elif diag_name =="phase_space_Lx_r":
+                    elif diag_name =="phase_space_Lx_r" or diag_name =="phase_space_Lx_r_zoom":
                         r_range  = diag.getAxis("user_function0")
                         Lx_range = diag.getAxis("user_function1")
                         extent = [r_range[0]/self.l0,r_range[-1]/self.l0,Lx_range[0],Lx_range[-1]]
@@ -2787,6 +2802,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     ax.relim()            # Recompute the limits
                     ax.autoscale_view()   # Apply the new limits
             figure.suptitle(f"{self.sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+            if is_compa:
+                figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}| t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+
             figure.tight_layout()
             canvas.draw()
             return

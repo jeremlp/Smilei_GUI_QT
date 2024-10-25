@@ -228,7 +228,10 @@ class IPythonDialog(QtWidgets.QMainWindow):
         # SAVE USEFUL VARIABLES
         #======================
         main = self.main
-        S = main.S
+        try:
+            S = main.S
+        except:
+            pass
         
         l0 = 2*pi
         w0 = S.namelist.w0
