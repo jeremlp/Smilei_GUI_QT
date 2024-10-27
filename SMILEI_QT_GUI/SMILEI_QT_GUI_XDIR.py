@@ -37,6 +37,7 @@ import IPython_dialog
 import memory_dialog
 import paramiko_SSH_SCP_class
 import class_threading
+import generate_diag_id
 
 import subprocess
 import json
@@ -203,7 +204,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
-        self.SCRIPT_VERSION ='0.11.2 - Plasma Averaged'
+        self.SCRIPT_VERSION ='0.11.4 - Plasma Averaged'
         self.COPY_RIGHT = "Jeremy LA PORTE"
         self.spyder_default_stdout = sys.stdout
 
@@ -602,10 +603,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plt_toolbar_3.setFixedHeight(self.toolBar_height)
 
         layoutTabSettingsCheck = QtWidgets.QGridLayout()
-        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","Lx_av","Lx_trans","jx_av","jx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans","Rho", "Rho_trans","Ekin", "Ekin_trans"]
+        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","ni","Lx_av","Lx_trans","jx_av","jx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans","Rho", "Rho_trans","Ekin", "Ekin_trans"]
         self.plasma_check_list = []
         N_plasma = len(self.plasma_names)
-        print("len plasma:", N_plasma)
+        # print("len plasma:", N_plasma)
         for i, name in enumerate(self.plasma_names):
             plasma_CHECK = QtWidgets.QCheckBox(name)
             self.plasma_check_list.append(plasma_CHECK)
@@ -615,8 +616,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 # separator1.setFrameShape(QtWidgets.QFrame.VLine)
                 # separator1.setLineWidth(1)
                 # layoutTabSettingsCheck.addWidget(separator1)
-            print(i, i%(N_plasma//2))
-            layoutTabSettingsCheck.addWidget(plasma_CHECK, int(i>=len(self.plasma_names)//2),i%(N_plasma//2))
+            # print(i, i%(N_plasma//2))
+            row = int(i>=N_plasma//2)
+            col = i
+            if row>0: col = i-N_plasma//2
+            layoutTabSettingsCheck.addWidget(plasma_CHECK, row,col)
 
         # layoutTabSettingsCheck.addStretch(50)
         layoutTabSettingsCheck.setContentsMargins(0, 0, 0, 0)
@@ -2148,7 +2152,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     cmap = "RdYlBu"
                     vmin = -vmax_ptheta
                     vmax =  vmax_ptheta
-                elif "ne" in self.plasma_names[i]:
+                elif "ne" in self.plasma_names[i] or "ni" in self.plasma_names[i]:
                     cmap = "jet"
                     vmin = 0
                     vmax = 3
@@ -2921,7 +2925,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     layout = self.layout_progress_bar_dict[str(old_sim_id_int)]
                     progress_bar = layout.itemAt(2).widget()
                     ETA_LABEL = layout.itemAt(3).widget()
-                    dl_sim_BUTTON = layout.itemAt(5).widget()
+                    dl_sim_BUTTON = layout.itemAt(6).widget()
 
                     progress_bar.setStyleSheet(self.qss_progressBar_COMPLETED)
                     progress_bar.setValue(100)
@@ -2953,11 +2957,11 @@ class MainWindow(QtWidgets.QMainWindow):
             sim_name = sim["job_full_name"][:-3]
             sim_nodes = int(sim["NODES"])
             sim_push_time = sim["push_time"]
-
+            diag_id = sim["diag_id"]
 
             if (sim_id_int not in self.running_sim_hist) and (sim_id_int not in self.finished_sim_hist):
 
-                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time)
+                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time, diag_id)
                 self.layout_progress_bar_dict[sim_id] = layoutProgressBar
 
                 item_count = self.layoutTornado.count()
@@ -2999,8 +3003,6 @@ class MainWindow(QtWidgets.QMainWindow):
         print("===========================")
         print("downloading request for", sim_id,job_full_path)
 
-
-
         host = "llrlsi-gw.in2p3.fr"
         user = "jeremy"
         with open('../tornado_pwdfile.txt', 'r') as f: pwd_crypt = f.read()
@@ -3025,10 +3027,10 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = self.layout_progress_bar_dict[str(sim_id)]
         # progress_bar = layout.itemAt(2).widget()
         ETA_label = layout.itemAt(3).widget()
-        dl_sim_BUTTON = layout.itemAt(5).widget()
+        dl_sim_BUTTON = layout.itemAt(6).widget()
         dl_sim_BUTTON.setStyleSheet("border-color: orange")
         dl_sim_BUTTON.setEnabled(False)
-        close_sim_BUTTON = layout.itemAt(6).widget()
+        close_sim_BUTTON = layout.itemAt(7).widget()
         close_sim_BUTTON.setEnabled(False)
         ETA_label.setText("DL")
         return
@@ -3051,8 +3053,8 @@ class MainWindow(QtWidgets.QMainWindow):
         layout = self.layout_progress_bar_dict[str(sim_id)]
         progress_bar = layout.itemAt(2).widget()
         ETA_label = layout.itemAt(3).widget()
-        dl_sim_BUTTON = layout.itemAt(5).widget()
-        close_sim_BUTTON = layout.itemAt(6).widget()
+        dl_sim_BUTTON = layout.itemAt(6).widget()
+        close_sim_BUTTON = layout.itemAt(7).widget()
         dl_sim_BUTTON.setStyleSheet("border-color: green")
         dl_sim_BUTTON.setEnabled(False)
         close_sim_BUTTON.setEnabled(True)
@@ -3102,10 +3104,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 sim_name = sim["job_full_name"][:-3]
                 sim_nodes = int(sim["NODES"])
                 sim_push_time = sim["push_time"]
+                diag_id = sim["diag_id"]
 
                 self.running_sim_hist.append(int(sim_id))
 
-                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time)
+                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time, diag_id)
 
                 self.layout_progress_bar_dict[sim_id] = layoutProgressBar
                 self.layoutTornado.addLayout(layoutProgressBar)
@@ -3119,7 +3122,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.call_ThreadDownloadSimJSON()
             app.processEvents()
 
-    def createLayoutProgressBar(self, sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time):
+    def createLayoutProgressBar(self, sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time, diag_id):
         layoutProgressBar = QtWidgets.QHBoxLayout()
 
         tornado_PROGRESS_BAR = QtWidgets.QProgressBar(maximum=100)
@@ -3153,6 +3156,10 @@ class MainWindow(QtWidgets.QMainWindow):
         push_time_LABEL.setFont(custom_FONT)
         push_time_LABEL.setMinimumWidth(75)
 
+        diag_id_LABEL = QtWidgets.QLabel("D"+str(diag_id))
+        diag_id_LABEL.setFont(custom_FONT)
+        diag_id_LABEL.setMinimumWidth(65)
+
         dl_sim_BUTTON = QtWidgets.QPushButton()
         dl_sim_BUTTON.setIcon(QtGui.QIcon(os.environ["SMILEI_QT"]+"\\Ressources\\download_button.png"))
         dl_sim_BUTTON.setFixedSize(35,35)
@@ -3165,6 +3172,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutProgressBar.addWidget(tornado_PROGRESS_BAR)
         layoutProgressBar.addWidget(ETA_LABEL)
         layoutProgressBar.addWidget(push_time_LABEL)
+        layoutProgressBar.addWidget(diag_id_LABEL)
         layoutProgressBar.addWidget(dl_sim_BUTTON)
 
         layoutProgressBar.setContentsMargins(25,20,25,20) #left top right bottom
@@ -3193,22 +3201,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loadthread = class_threading.ThreadDownloadSimData(job_full_path)
         self.loadthread.start()
         # self.downloadSimData(job_full_path) #"_NEW_PLASMA_/new_plasma_LG_optic_ne0.01_dx12/")
-
-    # def showToast(self,msg1,msg2=None, preset=ToastPreset.SUCCESS):
-    #     toast = Toast(self)
-    #     toast.setDuration(10000)  # Hide after 10 seconds
-    #     toast.setTitle(msg1)
-    #     toast.setText(msg2)
-    #     toast.applyPreset(preset)  # Apply style preset
-    #     toast.setBorderRadius(2)  # Default: 0
-
-    #     toast.show()
-    # def showError(self, message):
-    #     self.error_msg = QtWidgets.QMessageBox()
-    #     self.error_msg.setIcon(QtWidgets.QMessageBox.Critical)
-    #     self.error_msg.setWindowTitle("Error")
-    #     self.error_msg.setText(message)
-    #     self.error_msg.exec_()
 
     def printSI(self,x,baseunit,ndeci=2):
         prefix="yzafpnµm kMGTPEZY"

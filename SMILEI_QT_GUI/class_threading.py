@@ -165,6 +165,9 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
                 elif selected_plasma_names[i] == "ne_trans":
                     Bweight_trans = S.ParticleBinning("weight_trans")
                     plasma_data_list.append(np.array(Bweight_trans.getData())/ne)
+                elif selected_plasma_names[i] == "ni":
+                    Bweight_ions_long = S.ParticleBinning("weight_ions")
+                    plasma_data_list.append(np.mean(np.array(Bweight_ions_long.getData())/ne,axis=-1))
 
                 elif selected_plasma_names[i] == "Lx_av":
                     BLx_long = S.ParticleBinning("Lx_W")
@@ -265,14 +268,13 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
                 # np.savez(f"{sim_path}/plasma_{selected_plasma_names[i]}.npz", t_range=Bx_trans_diag.getTimes(), data=data)
             elif selected_plasma_names[i] == "ne":
                 Bweight_long = S.ParticleBinning("weight")
-                # print("ne",np.array(Bweight_long.getData()).shape)
                 plasma_data_list.append(np.array(Bweight_long.getData())/ne)
-                # np.savez(f"{sim_path}/plasma_{selected_plasma_names[i]}.npz", t_range=Bweight_long.getTimes(), data=data)
             elif selected_plasma_names[i] == "ne_trans":
                 Bweight_trans = S.ParticleBinning("weight_trans")
-                # print("ne_trans",np.array(Bweight_trans.getData()).shape)
                 plasma_data_list.append(np.array(Bweight_trans.getData())/ne)
-                # np.savez(f"{sim_path}/plasma_{selected_plasma_names[i]}.npz", t_range=Bweight_trans.getTimes(), data=data)
+            elif selected_plasma_names[i] == "ni":
+                Bweight_ions_long = S.ParticleBinning("weight_ions")
+                plasma_data_list.append(np.array(Bweight_ions_long.getData())/ne)
             elif selected_plasma_names[i] == "Lx":
                 BLx_long = S.ParticleBinning("Lx_W")
                 plasma_data_list.append(np.array(BLx_long.getData()))

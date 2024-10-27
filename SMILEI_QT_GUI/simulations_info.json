@@ -1,21 +1,3 @@
 {
-    "47352": {
-        "job_id": "47352",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_base_NEG_OAM_Long",
-        "job_full_name": "sim_base_NEG_OAM_Long.sh",
-        "NODES": "8",
-        "progress": 0.5940151853506029,
-        "ETA": "16h16",
-        "push_time": 11965
-    },
-    "47507": {
-        "job_id": "47507",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_base_OAM_frozen_ions",
-        "job_full_name": "sim_base_OAM_frozen_ions.sh",
-        "NODES": "8",
-        "progress": 0.7592675301473872,
-        "ETA": "1h58",
-        "push_time": 2442
-    },
-    "datetime": "25/10 - 17h58"
+    "datetime": "27/10 - 22h54"
 }
