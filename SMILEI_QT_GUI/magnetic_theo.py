@@ -13,7 +13,7 @@ import sys
 module_dir_happi = 'C:/Users/jerem/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
-S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_base_OAM_Long')
+S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/')
 l0=2*np.pi
 
 plt.close("all")
@@ -22,7 +22,7 @@ l0 = 2*pi
 a0 = 10
 w0 = 6*l0
 Tp=30*l0
-eps,l= 0,1
+eps,l= 0,0
 zR = 0.5*w0**2
 C_lp = np.sqrt(2/math.factorial(abs(l)))
 
