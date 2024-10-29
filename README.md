@@ -22,7 +22,9 @@ Allows to access app variables and perform operation or print them to the log di
 
 ### App screenshot
 ![image](https://github.com/user-attachments/assets/2388e919-629c-47ea-90aa-7ae414eabeec)
-![image](https://github.com/user-attachments/assets/61045fb0-93bb-4eb1-abcd-e3c77e903e3e)
+
+![image](https://github.com/user-attachments/assets/3a88b6f6-8c21-4bed-af4a-af42306c8583)
+
 ![image](https://github.com/user-attachments/assets/c327bc33-be86-4da1-8a3b-b2c70cb74f83)
 ![image](https://github.com/user-attachments/assets/dbfd95fe-f4d3-4921-8a8a-20d3d5d9dd53)
 ![image](https://github.com/user-attachments/assets/fe041241-3d4a-435d-903d-224e4478f50b)
