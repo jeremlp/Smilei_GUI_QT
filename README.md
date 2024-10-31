@@ -5,7 +5,8 @@ Graphical User Interface for Smilei PIC code analysis.
 ### Multiples diagnostic tabs
 - Fields diagnostic tab: Ex, Ey, Ez, Bx, By, Bz, Er, Etheta, Br, Btheta
 - TrackParticles diagnostic tab: AM radial and transverse distribution
-- Plasma diagnostic tab: Bz and ne longitudinal and transverse distribution
+- Plasma diagnostic tab: Bz, densities, current, momentum, energy... longitudinal and transverse distributions
+- ParticleBinning diagnostic tab : 
 - Tornado SSH & SCP pooling: list of running and finished simulations with progress bar and estimated completion time. Download all simulations data directly from the app
 
 ### Comparison between simulations
