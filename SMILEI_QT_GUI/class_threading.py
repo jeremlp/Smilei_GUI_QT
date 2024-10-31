@@ -190,6 +190,18 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
                     Bvx_trans = S.ParticleBinning("jx_trans")
                     plasma_data_list.append(np.array(Bvx_trans.getData()))
 
+                elif selected_plasma_names[i] == "rho":
+                    Bvx_long = S.ParticleBinning("rho")
+                    plasma_data_list.append(np.mean(np.array(Bvx_long.getData()),axis=-1))
+                elif selected_plasma_names[i] == "rho_trans":
+                    Bvx_trans = S.ParticleBinning("rho_trans")
+                    plasma_data_list.append(np.array(Bvx_trans.getData()))
+                    
+                elif selected_plasma_names[i] == "px":
+                    Bptheta_long = S.ParticleBinning("px_W")
+                    plasma_data_list.append(np.mean(np.array(Bptheta_long.getData()),axis=-1))
+
+                    
                 elif selected_plasma_names[i] == "pθ_av":
                     Bptheta_long = S.ParticleBinning("ptheta_W")
                     plasma_data_list.append(np.mean(np.array(Bptheta_long.getData()),axis=-1))

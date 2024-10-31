@@ -26,12 +26,8 @@ def get_diag_id(file):
     v = str2int(diag_txt)
     return v,int(str(v)[::9])
 
-
-
 if __name__ == '__main__':
-    # import numpy as np
     import sys
-
-    file = 'D:/JLP/CMI/_MASTER_2_/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_base_OAM_Long/laser_propagation_3d.py'
+    file = 'C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_OAM_Long/laser_propagation_3d.py'
     print(get_diag_id(file))
 

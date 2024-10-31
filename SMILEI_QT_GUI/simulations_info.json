@@ -1,43 +1,23 @@
 {
-    "49446": {
-        "job_id": "49446",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_Tp24",
-        "job_full_name": "sim_Tp24.sh",
-        "NODES": "2",
-        "progress": 0.7190710138454667,
-        "ETA": "6h25",
-        "push_time": 6087,
-        "diag_id": 79124
-    },
-    "49645": {
-        "job_id": "49645",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_OAM_cut",
-        "job_full_name": "sim_OAM_cut.sh",
-        "NODES": "5",
-        "progress": 0.45556051808843234,
-        "ETA": "1h41",
-        "push_time": 2868,
-        "diag_id": 10443
-    },
-    "49687": {
-        "job_id": "49687",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_OAM_Long",
-        "job_full_name": "sim_OAM_Long.sh",
-        "NODES": "5",
-        "progress": 0.11612326931665923,
-        "ETA": "3h58",
-        "push_time": 2955,
-        "diag_id": 52601
-    },
-    "49709": {
-        "job_id": "49709",
-        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_1keV",
-        "job_full_name": "sim_1keV.sh",
+    "50150": {
+        "job_id": "50150",
+        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_fne_SG",
+        "job_full_name": "sim_fne_SG.sh",
         "NODES": "3",
-        "progress": 0,
-        "ETA": "-",
-        "push_time": -1,
-        "diag_id": 52601
+        "progress": 0.7949977668602054,
+        "ETA": "1h26",
+        "push_time": 2820,
+        "diag_id": 10218
     },
-    "datetime": "29/10 - 15h16"
+    "50185": {
+        "job_id": "50185",
+        "job_full_path": "/sps3/jeremy/LULI/SIM_PHYSICAL/sim_LaserOffset_OAM",
+        "job_full_name": "sim_LaserOffset_OAM.sh",
+        "NODES": "5",
+        "progress": 0.0401965163019205,
+        "ETA": "9h05",
+        "push_time": 6221,
+        "diag_id": 15762
+    },
+    "datetime": "31/10 - 15h52"
 }

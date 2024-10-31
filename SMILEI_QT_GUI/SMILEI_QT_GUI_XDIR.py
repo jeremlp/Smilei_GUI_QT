@@ -71,7 +71,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         font_color_light = "black"
         font_color_dark = "white"
-
+        
+        self.qss_plt_title = {'fontname':'Courier New','fontweight':'bold'}
+        
         self.qss_button = """
         QPushButton {
             border-width: 2px;
@@ -186,7 +188,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.qss = self.light_qss_groupBox + self.light_qss_tab + self.light_qss_label + self.qss_button + self.qss_progressBar + self.qss_checkBox + self.qss_radioButton
 
         qdarktheme.setup_theme(self.theme,additional_qss=self.qss)
-        self.setGeometry(175,125,window_width,window_height)
+        self.setGeometry(155,50,window_width,window_height)
 
         #==============================
         # FONTS
@@ -206,7 +208,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.11.6', 'Compa & Diag ID'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.11.8', 'Title font'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -403,6 +405,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.run_time_LABEL = QtWidgets.QLabel("")
         self.run_time_LABEL.setFont(self.medium_bold_FONT)
         layoutRunTime = self.creatPara("Run time :", self.run_time_LABEL)
+        boxLayout_sim_info.addLayout(layoutRunTime)
+
+        self.diag_id_LABEL = QtWidgets.QLabel("")
+        self.diag_id_LABEL.setFont(self.medium_FONT)
+        layoutRunTime = self.creatPara("Diag ID :", self.diag_id_LABEL)
         boxLayout_sim_info.addLayout(layoutRunTime)
 
         verticalSpacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -610,10 +617,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.plt_toolbar_3.setFixedHeight(self.toolBar_height)
 
         layoutTabSettingsCheck = QtWidgets.QGridLayout()
-        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","ni","Lx_av","Lx_trans","jx_av","jx_trans","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans","Rho", "Rho_trans","Ekin", "Ekin_trans"]
+        self.plasma_names = ["Bx","Bx_av","Bx_trans","ne","ne_av","ne_trans","ni","Lx_av","Lx_trans","jx_av","jx_trans","px","pθ_av","pθ_trans", "Jx","Jx_trans","Jθ", "Jθ_trans","rho", "rho_trans","Ekin", "Ekin_trans"]
         self.plasma_check_list = []
         N_plasma = len(self.plasma_names)
-        # print("len plasma:", N_plasma)
         for i, name in enumerate(self.plasma_names):
             plasma_CHECK = QtWidgets.QCheckBox(name)
             self.plasma_check_list.append(plasma_CHECK)
@@ -627,9 +633,9 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettingsCheck.setContentsMargins(0, 0, 0, 0)
 
 
-        self.plasma_check_list[0].setChecked(True)
+        self.plasma_check_list[1].setChecked(True)
         # self.Ey_CHECK.setChecked(True)
-        self.plasma_check_list[3].setChecked(True)
+        self.plasma_check_list[4].setChecked(True)
 
         layoutTabSettingsCheck.setSpacing(0)
 
@@ -925,18 +931,6 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutSmileiLogo.addWidget(self.smilei_icon_BUTTON)
         self.programm_TABS.setLayout(layoutSmileiLogo)
 
-
-        # print(self.programm_TABS.geometry().bottomRight())
-        # print(self.smilei_icon_BUTTON.geometry().bottomRight())
-        # p = self.programm_TABS.geometry().bottomRight()/2 #- self.smilei_icon_BUTTON.geometry().bottomRight()
-        # print(p)
-
-        # self.smilei_icon_BUTTON.move(p)
-        # self.smilei_icon_BUTTON.hide()
-
-        # layoutTabsAndLeft.addWidget(self.smilei_icon_BUTTON)
-        # self.programm_TABS.ad
-        # self.programm_TABS.hide()
         layoutBottom = QtWidgets.QHBoxLayout()
         layoutBottom.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
 
@@ -1152,12 +1146,13 @@ class MainWindow(QtWidgets.QMainWindow):
         memory_str = f"Memory: {mem_prc:.0f}%"
         storage_str = f"Storage: {stor_go:.1f} Go"
         if mem_prc > 85:
-            memory_str = "<font color='red'>Memory: {mem_prc:.0f}%</font>"
+            memory_str = f"<font color='red'>Memory: {mem_prc:.0f}%</font>"
         if stor_go<20:
             storage_str = f"<font color='red'>Storage: {stor_go:.1f} Go</font>"
 
-            self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | {memory_str} | {storage_str} | {self.COPY_RIGHT}")
-
+        self.general_info_LABEL.setText(f"Version: {self.SCRIPT_VERSION} | {memory_str} | {storage_str} | {self.COPY_RIGHT}")
+        app.processEvents()
+        return
     def onOpenSim(self):
         sim_file_DIALOG= QtWidgets.QFileDialog()
         sim_file_DIALOG.setDirectory(os.environ["SMILEI_CLUSTER"])
@@ -1233,7 +1228,8 @@ class MainWindow(QtWidgets.QMainWindow):
         NODES = self.S.namelist.smilei_mpi_size//2
 
         self.run_time_LABEL.setText(f"{(run_time/60)//60:.0f}h{(run_time/60)%60:0>2.0f} | {NODES} nds ({push_time:.0f} ns)")
-
+        diag_id_full, diag_id = generate_diag_id.get_diag_id(self.sim_directory_path+"/laser_propagation_3d.py")
+        self.diag_id_LABEL.setText(f"D{diag_id}")
 
         self.intensity_SI = (self.a0/0.85)**2 *10**18 #W/cm^2
 
@@ -1516,16 +1512,16 @@ class MainWindow(QtWidgets.QMainWindow):
         fields_t_range = self.compa_S.Probe(0,"Ex").getTimes()
 
         ax.plot(fields_t_range/self.l0, AM_full_int_compa,"--", label="AM", c=f"C{len(ax.get_lines())}")
-        self.writeToFileCompa(self.compa_sim_directory_path,"AM",np.vstack([fields_t_range,AM_full_int_compa]).T)
+        self.writeToFileCompa(self.compa_sim_directory_path,"AM",np.VStack([fields_t_range,AM_full_int_compa]).T)
         ax.legend()
-        ax.relim()            # Recompute the limits based on current data
-        ax.autoscale_view()   # Apply the new limits
+        canvas.draw() 
+        ax.relim()            # Recompute the limits
+        ax.autoscale_view()  
         figure.tight_layout()
         canvas.draw()
 
 
     def onUpdateTabScalar_AM(self, AM_full_int, is_compa=False):
-        # print(AM_full_int.shape, is_compa)
         if not is_compa:
             canvas = self.canvas_0
         else: canvas = self.canvas_4_scalar
@@ -1536,7 +1532,7 @@ class MainWindow(QtWidgets.QMainWindow):
         figure = canvas.figure
         ax = figure.axes[0]
         ax.plot(fields_t_range/self.l0, AM_full_int,label="AM", ls="-", c=f"C{len(ax.get_lines())}")
-        self.writeToFileCompa(self.sim_directory_path,"AM",np.vstack([fields_t_range,AM_full_int]).T)
+        self.writeToFileCompa(self.sim_directory_path,"AM",np.VStack([fields_t_range,AM_full_int]).T)
 
 
         if is_compa and self.is_compa_sim_loaded:
@@ -1551,17 +1547,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 # raise
                 # self.call_ThreadGetAMIntegral(self.compa_S)
         ax.legend()
-        # hfont = {'fontname':'Helvetica'}
-        # print(AM_tot)
-
-        # print(f"AM/U={AM_tot/self.Uelm_tot_max:.2f}")
-        # print(f"Scalar time plot \nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ")
         figure.suptitle(f"{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
         if is_compa:
-            figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
+            figure.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_tot/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
 
-        ax.relim()            # Recompute the limits based on current data
-        ax.autoscale_view()   # Apply the new limits
+        canvas.draw()        
+        ax.relim()            # Recompute the limits
+        ax.autoscale_view()   
         figure.tight_layout()
         canvas.draw()
 
@@ -1596,8 +1588,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             canvas = self.canvas_4_scalar
             boolList = [check.isChecked() for check in self.compa_scalar_check_list]
-
-        # print("Scalar boolList:",boolList, "| is_compa:",is_compa)
 
         self.scalar_t_range = self.S.Scalar("Uelm").getTimes()
         figure = canvas.figure
@@ -1638,7 +1628,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = np.array(self.S.Scalar(self.scalar_names[check_id]).getData())
                 ax.plot(self.scalar_t_range/l0, data,
                               label=self.scalar_names[check_id], color = f"C{len(ax.get_lines())}")
-                # self.writeToFileCompa(self.sim_directory_path, self.scalar_names[check_id],np.vstack([self.scalar_t_range, data]).T)
+                # self.writeToFileCompa(self.sim_directory_path, self.scalar_names[check_id],np.VStack([self.scalar_t_range, data]).T)
                 if is_compa and self.is_compa_sim_loaded:
                     #data_file = np.loadtxt(f"{self.compa_sim_directory_path}/data_{self.scalar_names[check_id]}.npy")
                     #data_t_range, data = data_file[:,0], data_file[:,1]
@@ -1671,16 +1661,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 # return
         else:
-            # print("\n==================")
             old_lines = ax.get_lines()
-            # print("old lines:",old_lines)
 
             for k, t in enumerate(ax.get_legend().get_texts()): # Delete lines
-                # print(k,t.get_text())
                 if self.scalar_names[check_id] == t.get_text():
                     old_lines[k].remove()
             updated_lines = ax.get_lines()
-            # print("new lines:",updated_lines)
             if len(updated_lines) > 0:
                 for k in range(len(updated_lines)): # Recolor lines
                     ax.get_lines()[k].set_color(f"C{k}")
@@ -1691,12 +1677,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         figure.suptitle(f"""{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ""",fontsize=14)
         if is_compa:
-            figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
+            figure.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ",fontsize=14)
 
         figure.tight_layout()
         canvas.draw()
         # t1 = time.perf_counter()
-        # print("Scalar update:",(t1-t0)*1000,"ms")
         return
 
     def onUpdateTabFieldsFigure(self, fields_data_list):
@@ -1749,9 +1734,9 @@ class MainWindow(QtWidgets.QMainWindow):
         byte_size_track = getsizeof(self.fields_data_list)+getsizeof(self.fields_image_list)
         print("Memory from FIELDS:",round(byte_size_track*10**-6,1),"MB (",round(byte_size_track*100/psutil.virtual_memory().total,1),"%)")
         if combo_box_index==0:
-            self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
+            self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
         else:
-            self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[x_idx]/self.l0:.2f}~\lambda$")
+            self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[x_idx]/self.l0:.2f}~\lambda$",**self.qss_plt_title)
         self.figure_1.tight_layout()
         self.figure_1.tight_layout()
         self.canvas_1.draw()
@@ -1822,7 +1807,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.fields_image_list = []
             self.fields_data_list = []
-            # print(len(self.fields_image_list))
 
             self.loadthread = class_threading.ThreadGetFieldsProbeData(boolList, self.fields_names, self.S, self.fields_t_range, self.fields_paxisX, self.fields_paxisY, self.fields_paxisZ)
             self.loadthread.finished.connect(self.onUpdateTabFieldsFigure)
@@ -1858,13 +1842,13 @@ class MainWindow(QtWidgets.QMainWindow):
             if combo_box_index==0:
                 for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,:,:,self.fields_trans_mid_idx].T)
-                        self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
+                        self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
                         if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
             else:
                 for i,im in enumerate(self.fields_image_list):
                     im.set_data(self.fields_data_list[i][time_idx,xcut_idx,:,:].T)
                     if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
-                    self.figure_1.suptitle(f"$t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$")
+                    self.figure_1.suptitle(f"$t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
             self.canvas_1.draw()
 
         elif check_id == 1000:
@@ -1880,12 +1864,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 if combo_box_index==0:
                     for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,:,:,self.fields_trans_mid_idx].T)
-                        self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$")
+                        self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
                 else:
                     for i,im in enumerate(self.fields_image_list):
                         im.set_data(self.fields_data_list[i][time_idx,xcut_idx,:,:].T)
                         if self.fields_use_autoscale_CHECK.isChecked(): im.autoscale()
-                self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$")
+                self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.fields_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.fields_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
                 self.canvas_1.draw()
                 time.sleep(0.05)
                 app.processEvents()
@@ -2011,7 +1995,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # ax2.scatter(self.y[0],self.z[0],s=1)
             self.track_trans_distrib_im = ax2.scatter(self.y[0]/l0,self.z[0]/l0,s=1, c=self.Lx_track[-1], vmin=-vmax,vmax=vmax, cmap="RdYlBu")
             self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
-            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
+            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)",**self.qss_plt_title)
             self.figure_2.tight_layout()
             self.canvas_2.draw()
             time1 = time.perf_counter()
@@ -2033,7 +2017,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.track_radial_distrib_im.set_offsets(np.c_[self.r[time_idx]/l0,self.Lx_track[time_idx]])
             else:
                 self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
-            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
+            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)",**self.qss_plt_title)
             self.canvas_2.draw()
 
         elif check_id == 1000: #PLAY ANIMATION
@@ -2053,9 +2037,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
 
-                self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)")
+                self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)",**self.qss_plt_title)
                 self.canvas_2.draw()
-                # print('drawn')
                 time.sleep(anim_speed)
                 app.processEvents()
             self.loop_in_process = False
@@ -2142,7 +2125,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 if "_av" not in self.plasma_names[i] and contains_av:
                     current_time = self.av_plasma_t_range[slider_time_idx]
                     new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
-                    print(slider_time_idx, new_time_idx)
                     time_idx = new_time_idx
                 else: time_idx = slider_time_idx
 
@@ -2159,7 +2141,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 elif "Ekin" in self.plasma_names[i]:
                     cmap = "smilei"
                     vmin, vmax = 0, 0.1
-                elif "jx" in self.plasma_names[i]:
+                elif "jx" in self.plasma_names[i] or "px" in self.plasma_names[i]:
                     cmap = "RdYlBu"
                     vmin, vmax = -0.01, 0.01
                 else:
@@ -2172,7 +2154,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     data = self.plasma_data_list[k][time_idx,x_idx,:,:]
                 else:
                     extent = self.plasma_extentXY_long
-                    print(self.plasma_data_list[k].shape)
                     data = self.plasma_data_list[k][time_idx].T
 
                 im = ax.imshow(data, aspect="auto",
@@ -2183,7 +2164,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.figure_3.colorbar(im, ax=ax,pad=0.01)
                 self.plasma_image_list.append(im)
                 k+=1
-        self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.effective_plasma_t_range[slider_time_idx]/l0:.2f}~t_0$")
+        self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.effective_plasma_t_range[slider_time_idx]/l0:.2f}~t_0$",**self.qss_plt_title)
         for w in range(10): #multiple tight_layout 
             self.figure_3.tight_layout()
             self.figure_3.tight_layout()
@@ -2298,7 +2279,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 if "_av" not in selected_plasma_names[i] and contains_av:
                     current_time = self.av_plasma_t_range[time_idx]
                     new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
-                    print(time_idx, new_time_idx)
                     time_idx = new_time_idx
                 else: time_idx = self.plasma_time_SLIDER.sliderPosition()
 
@@ -2308,7 +2288,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     im.set_data(self.plasma_data_list[i][time_idx].T)
 
-            self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.effective_plasma_t_range[slider_time_idx]/l0:.2f}~t_0$")
+            self.figure_3.suptitle(f"{self.sim_directory_name} | $t={self.effective_plasma_t_range[slider_time_idx]/l0:.2f}~t_0$",**self.qss_plt_title)
             self.canvas_3.draw()
 
         elif check_id == 1000 :
@@ -2327,7 +2307,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     if "_av" not in selected_plasma_names[i] and contains_av:
                         current_time = self.av_plasma_t_range[time_idx]
                         new_time_idx = np.where(np.abs(current_time - self.plasma_t_range) == np.min(np.abs(current_time - self.plasma_t_range)))[0][0]
-                        print(time_idx, new_time_idx)
                         time_idx = new_time_idx
                     else: time_idx = slider_time_idx
 
@@ -2337,7 +2316,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     else:
                         im.set_data(self.plasma_data_list[i][time_idx,:,:].T)
 
-                self.figure_3.suptitle(f"{self.sim_directory_name} | t={self.effective_plasma_t_range[slider_time_idx]/self.l0:.2f}$~t_0$")
+                self.figure_3.suptitle(f"{self.sim_directory_name} | t={self.effective_plasma_t_range[slider_time_idx]/self.l0:.2f}$~t_0$",**self.qss_plt_title)
                 self.canvas_3.draw()
                 time.sleep(0.01)
                 app.processEvents()
@@ -2353,9 +2332,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.figure_4_plasma.clf()
         self.ax4_plasma1 = self.figure_4_plasma.add_subplot(1,2,1)
-        self.ax4_plasma1.set_title(self.sim_directory_name)
+        self.ax4_plasma1.set_title(self.sim_directory_name,**self.qss_plt_title)
         self.ax4_plasma2 = self.figure_4_plasma.add_subplot(1,2,2)
-        self.ax4_plasma2.set_title(self.compa_sim_directory_name)
+        self.ax4_plasma2.set_title(self.compa_sim_directory_name,**self.qss_plt_title)
         selected_compa_plasma_names = np.array(self.plasma_names)[boolList]
 
         self.loadthread = class_threading.ThreadGetPlasmaProbeData(self.S, selected_compa_plasma_names)
@@ -2390,12 +2369,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
         if "_av" in self.selected_plasma_name: #if contains averaged quantities, change slider range
-            self.effective_plasma_t_range = self.av_plasma_t_range
+            self.effective_compa_plasma_t_range = self.av_plasma_t_range
         else:
-            self.effective_plasma_t_range = self.plasma_t_range
-        self.compa_plasma_time_SLIDER.setMaximum(len(self.effective_plasma_t_range)-1)
-        self.compa_plasma_time_SLIDER.setValue(len(self.effective_plasma_t_range)-1)
-        self.compa_plasma_time_EDIT.setText(str(round(self.effective_plasma_t_range[-1]/self.l0,2)))
+            self.effective_compa_plasma_t_range = self.plasma_t_range
+        self.compa_plasma_time_SLIDER.setMaximum(len(self.effective_compa_plasma_t_range)-1)
+        self.compa_plasma_time_SLIDER.setValue(len(self.effective_compa_plasma_t_range)-1)
+        self.compa_plasma_time_EDIT.setText(str(round(self.effective_compa_plasma_t_range[-1]/self.l0,2)))
         time_idx = self.compa_plasma_time_SLIDER.sliderPosition()
         x_idx = self.compa_plasma_xcut_SLIDER.sliderPosition()
         
@@ -2411,13 +2390,13 @@ class MainWindow(QtWidgets.QMainWindow):
         elif "Ekin" in self.selected_plasma_name:
             cmap = "smilei"
             vmin, vmax = 0, 0.1
-        elif "jx" in self.selected_plasma_name:
+        elif "jx" in self.selected_plasma_name or "px" in self.selected_plasma_name:
             cmap = "RdYlBu"
             vmin, vmax = -0.01, 0.01
         else:
             cmap = "RdYlBu"
-            vmin = -0.05*np.max(np.abs(self.selected_plasma_name[time_idx]))
-            vmax =  0.05*np.max(np.abs(self.selected_plasma_name[time_idx]))
+            vmin = -0.05*np.max(np.abs(self.selected_plasma_name))
+            vmax =  0.05*np.max(np.abs(self.selected_plasma_name))
 
         print("== DRAW IMSHOW FOR COMPA == ")
 
@@ -2453,7 +2432,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # self.cbar_4_plasma1.update_normal(self.compa_plasma_im1)
 
 
-        self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.plasma_t_range[time_idx]/self.l0:.2f}~t_0$")
+        self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.effective_compa_plasma_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
         self.figure_4_plasma.tight_layout()
         self.canvas_4_plasma.draw()
         return
@@ -2500,16 +2479,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_av_plasma_t_range = self.compa_S.ParticleBinning("weight_av").getTimes()
 
             if self.compa_plasma_t_range[-1] < self.plasma_t_range[-1]:
-                t_range = self.compa_plasma_t_range
+                self.effective_compa_plasma_t_range = self.compa_plasma_t_range
             else:
-                t_range = self.plasma_t_range
-
-
-            self.compa_plasma_time_SLIDER.setMaximum(len(t_range)-1)
+                self.effective_compa_plasma_t_range = self.plasma_t_range
+                
+            self.compa_plasma_time_SLIDER.setMaximum(len(self.effective_compa_plasma_t_range)-1)
             self.compa_plasma_xcut_SLIDER.setMaximum(len(self.plasma_paxisX_Bx)-1)
-            self.compa_plasma_time_SLIDER.setValue(len(t_range)-1)
+            self.compa_plasma_time_SLIDER.setValue(len(self.effective_compa_plasma_t_range)-1)
             self.compa_plasma_xcut_SLIDER.setValue(len(self.plasma_paxisX_Bx)-3)
-            self.compa_plasma_time_EDIT.setText(str(round(t_range[-1]/l0,2)))
+            self.compa_plasma_time_EDIT.setText(str(round(self.effective_compa_plasma_t_range[-1]/l0,2)))
             self.compa_plasma_xcut_EDIT.setText(str(round(self.plasma_paxisX_Bx[-3]/l0,2)))
 
             self.plasma_image_list = []
@@ -2527,7 +2505,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
             print("==== INIT PLASMA VAR FOR COMPA ====")
 
-        if check_id < 20:
             self.call_compa_ThreadGetPlasmaProbeData(check_id)
 
         elif check_id <= 210: #SLIDER UPDATE
@@ -2535,10 +2512,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 time_edit_value = float(self.compa_plasma_time_EDIT.text())
                 time_idx = np.where(abs(self.plasma_t_range/self.l0-time_edit_value)==np.min(abs(self.plasma_t_range/self.l0-time_edit_value)))[0][0]
                 self.compa_plasma_time_SLIDER.setValue(time_idx)
-                self.compa_plasma_time_EDIT.setText(str(round(self.plasma_t_range[time_idx]/self.l0,2)))
+                self.compa_plasma_time_EDIT.setText(str(round(self.effective_compa_plasma_t_range[time_idx]/self.l0,2)))
             else:
                 time_idx = self.compa_plasma_time_SLIDER.sliderPosition()
-                self.compa_plasma_time_EDIT.setText(str(round(self.plasma_t_range[time_idx]/self.l0,2)))
+                self.compa_plasma_time_EDIT.setText(str(round(self.effective_compa_plasma_t_range[time_idx]/self.l0,2)))
 
             if check_id == 201: #QLineEdit zcut
 
@@ -2553,11 +2530,11 @@ class MainWindow(QtWidgets.QMainWindow):
             if "trans" in self.selected_plasma_name:
                 data1 = self.compa_plasma_data1[time_idx,xcut_idx,:,:]
                 data2 = self.compa_plasma_data2[time_idx,xcut_idx,:,:]
-                self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.plasma_t_range[time_idx]/self.l0:.2f}~t_0$ ($x={self.plasma_paxisX_Bx[xcut_idx]/self.l0:.1f}~\lambda$)")
+                self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.effective_compa_plasma_t_range[time_idx]/self.l0:.2f}~t_0$ ($x={self.plasma_paxisX_Bx[xcut_idx]/self.l0:.1f}~\lambda$)",**self.qss_plt_title)
             else:
                 data1 = self.compa_plasma_data1[time_idx].T
                 data2 = self.compa_plasma_data2[time_idx].T
-                self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.plasma_t_range[time_idx]/self.l0:.2f}~t_0$")
+                self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.effective_compa_plasma_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
 
             self.compa_plasma_im1.set_data(data1)
             self.compa_plasma_im2.set_data(data2)
@@ -2570,19 +2547,19 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loop_in_process = True
 
             xcut_idx = self.compa_plasma_xcut_SLIDER.sliderPosition()
-            for time_idx in range(len(self.plasma_t_range)):
+            for time_idx in range(len(self.effective_compa_plasma_t_range)):
                 self.compa_plasma_time_SLIDER.setValue(time_idx)
-                self.compa_plasma_time_EDIT.setText(str(round(self.plasma_t_range[time_idx]/self.l0,2)))
+                self.compa_plasma_time_EDIT.setText(str(round(self.effective_compa_plasma_t_range[time_idx]/self.l0,2)))
 
 
                 if "trans" in self.selected_plasma_name:
                     data1 = self.compa_plasma_data1[time_idx,xcut_idx,:,:]
                     data2 = self.compa_plasma_data2[time_idx,xcut_idx,:,:]
-                    self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.plasma_t_range[time_idx]/self.l0:.2f}~t_0$ ($x={self.plasma_paxisX_Bx[xcut_idx]/self.l0:.1f}~\lambda$)")
+                    self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.effective_compa_plasma_t_range[time_idx]/self.l0:.2f}~t_0$ ($x={self.plasma_paxisX_Bx[xcut_idx]/self.l0:.1f}~\lambda$)",**self.qss_plt_title)
                 else:
                     data1 = self.compa_plasma_data1[time_idx].T
                     data2 = self.compa_plasma_data2[time_idx].T
-                    self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.plasma_t_range[time_idx]/self.l0:.2f}~t_0$")
+                    self.figure_4_plasma.suptitle(f"{self.selected_plasma_name} at $t={self.effective_compa_plasma_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
                 self.compa_plasma_im1.set_data(data1)
                 self.compa_plasma_im2.set_data(data2)
                 self.canvas_4_plasma.draw()
@@ -2721,36 +2698,38 @@ class MainWindow(QtWidgets.QMainWindow):
                         ax.set_ylabel("$L_x$")
 
                         if diag_name=="Lx_r":
-                            r_range = diag.getAxis("user_function0")
+                            x_range = diag.getAxis("user_function0")
                             idx = round(0.3*binning_data.shape[0]) #Average over 30 - 70% of the range to remove transiant effects
                             ax.set_xlabel("$r/\lambda$")
                             m = np.nanmean(binning_data[idx:-idx],axis=0)
                             std = np.nanstd(binning_data[idx:-idx],axis=0)
                             if not is_compa:
-                                ax.fill_between(r_range/self.l0, m-std, m+std, color="gray",alpha=0.25)
-                                ax.plot(r_range/self.l0, m, "k--", label=diag_name+" time average")
+                                ax.fill_between(x_range/self.l0, m-std, m+std, color="gray",alpha=0.25)
+                                ax.plot(x_range/self.l0, m, "k--", label=diag_name+" time average")
+                                
                             if is_compa:
-                                r_range2 = np.array(diag2.getAxis("user_function0"))
+                                x_range2 = np.array(diag2.getAxis("user_function0"))
                                 m2 = np.nanmean(binning_data2[idx:-idx],axis=0)
-                                ax.plot(r_range/self.l0, m, label=diag_name+" time average")
-                                ax.plot(r_range2/self.l0, m2, label=diag_name+"_compa time average")
+                                ax.plot(x_range/self.l0, m, label=diag_name+" time average")
+                                ax.plot(x_range2/self.l0, m2, label=diag_name+"_compa time average")
                                 binning_image = None #No time slider as we used time average
                                 binning_image2 = None
                                 break
-                        x_range = np.array(diag.getAxis("x"))
+                        else: # =Lx_x
+                            x_range = np.array(diag.getAxis("x"))
                         binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
                         if is_compa: 
-                            x_range2 = np.array(diag2.getAxis("x"))
+                            if diag_name!="Lx_r": x_range2 = np.array(diag2.getAxis("x"))
                             binning_image2, = ax.plot(x_range2/self.l0,binning_data2[time_idx], label=diag_name+"_compa")
 
                     else:
-                        binning_image, = ax.plot(x_range/self.l0,binning_data[time_idx], label=diag_name)
+                        # x_range = np.array(diag.getAxis(diag_name))
+                        binning_image, = ax.plot(x_range,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
-                        if is_compa: binning_image2, = ax.plot(x_range/self.l0,binning_data2[time_idx], label=diag_name+"_compa")
+                        if is_compa: binning_image2, = ax.plot(x_range,binning_data2[time_idx], label=diag_name+"_compa")
                         ax.set_xlabel(diag_name)
                         ax.set_ylabel("weight")
-                        print(diag_name)
                     if self.binning_log_CHECK.isChecked(): ax.set_yscale("log")
                 elif binning_data.ndim == 3:
                     if self.binning_log_CHECK.isChecked():
@@ -2763,8 +2742,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         figure.clf() #dont use single ax figure
                         ax = figure.add_subplot(1,2,1)
                         ax2 = figure.add_subplot(1,2,2)
-                        ax.set_title(self.sim_directory_name)
-                        ax2.set_title(self.compa_sim_directory_name)
+                        ax.set_title(self.sim_directory_name,**self.qss_plt_title)
+                        ax2.set_title(self.compa_sim_directory_name,**self.qss_plt_title)
 
                     if diag_name =="phase_space":
                         x_range  = diag.getAxis("x")
@@ -2778,8 +2757,8 @@ class MainWindow(QtWidgets.QMainWindow):
                         ax.set_xlabel("$x/\lambda$")
                         ax.set_ylabel("px")
                     elif diag_name =="phase_space_v":
-                        vy_range  = diag.getAxis("vy")
-                        vz_range = diag.getAxis("vz")
+                        vy_range  = diag.getAxis("py")
+                        vz_range = diag.getAxis("pz")
                         extent = [vy_range[0],vy_range[-1],vz_range[0],vz_range[-1]]
                         binning_image = ax.imshow(data[time_idx].T, extent=extent, cmap="smilei",aspect="auto", origin="lower")
                         if is_compa: binning_image2 = ax2.imshow(data2[time_idx].T, extent=extent, cmap="smilei",aspect="auto", origin="lower")
@@ -2831,9 +2810,9 @@ class MainWindow(QtWidgets.QMainWindow):
                     ax.legend()
                     ax.relim()            # Recompute the limits
                     ax.autoscale_view()   # Apply the new limits
-            figure.suptitle(f"{self.sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+            figure.suptitle(f"{self.sim_directory_name} | $t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
             if is_compa:
-                figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}| t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+                figure.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name}| $t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
 
             figure.tight_layout()
             canvas.draw()
@@ -2858,18 +2837,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 t_range = self.binning_t_range
                 data = binning_data[time_idx]
 
-            if binning_image is None or binning_image2 is None: #For Lx_r, no time update!
+            if binning_image is None or (is_compa and binning_image2 is None): #For Lx_r, no time update!
                 return
             if binning_data.ndim == 1:
                 if self.binning_log_CHECK.isChecked():
                     binning_image.axes.set_yscale("log")
                     if is_compa: binning_image2.axes.set_yscale("log")
-                    figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+                    if is_compa: figure.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} | $t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
+                    else:figure.suptitle(f"{self.sim_directory_name} | $t = {t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
                     canvas.draw()
                 else:
                     binning_image.axes.set_yscale("linear")
                     if is_compa: binning_image2.axes.set_yscale("linear")
-                    figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+                    if is_compa: figure.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
+                    else:figure.suptitle(f"{self.sim_directory_name} | $t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
                     canvas.draw()
                 return
 
@@ -2899,28 +2880,22 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             raise Exception('id for Binning invalid')
 
-        figure.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name} | t = {t_range[time_idx]/self.l0:.2f} $t_0$")
+        if is_compa: figure.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} | $t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
+        else:figure.suptitle(f"{self.sim_directory_name} | $t = {t_range[time_idx]/self.l0:.2f} ~t_0$",**self.qss_plt_title)
         canvas.draw()
         return
-
-
-
 
     def onCloseProgressBar(self, sim_id_int):
         print("REMOVE PROGRESS BAR LAYOUT", sim_id_int)
         print("finished sim:",self.finished_sim_hist)
         self.finished_sim_hist.remove(sim_id_int)
         layout_to_del = self.layout_progress_bar_dict[str(sim_id_int)]
-        # print("to del:",layout_to_del)
         for i in range(self.layoutTornado.count()):
             layout_progressBar = self.layoutTornado.itemAt(i)
-            # print(i,layout_progressBar)
             if layout_progressBar == layout_to_del:
-                # print("delete:",layout_progressBar)
                 self.deleteLayout(self.layoutTornado, i)
 
     def async_onUpdateTabTornado(self, download_trnd_json = True):
-        # print("async check")
         """
         asynchronous function called PERIODICALLY
         """
@@ -2939,7 +2914,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if (CURRENT_NB_SIM_RUNNING <= OLD_NB_SIM_RUNNING) and (list(self.sim_dict) != list(self.running_sim_hist)): #AT LEAST ONE SIMULATION HAS FINISHED
             running_sim_hist = np.copy(self.running_sim_hist)
             for n,old_sim_id_int in enumerate(running_sim_hist):
-                print(n,old_sim_id_int)
+                print("running sim loop:",n,old_sim_id_int)
                 if str(old_sim_id_int) not in list(self.sim_dict): #this simulation has finished
                     print(old_sim_id_int,"not in", list(self.sim_dict))
                     finished_sim_path = self.previous_sim_dict[str(old_sim_id_int)]["job_full_path"]
@@ -3070,6 +3045,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         size = sum([os.path.getsize(f"{local_sim_path}\{f}") for f in os.listdir(local_sim_path)])
         prc = round(size/(total_size*1024)*100)
+        
+        
         print(f"tornado download {sim_id}:",prc,"%")
         layout = self.layout_progress_bar_dict[str(sim_id)]
         progress_bar = layout.itemAt(2).widget()
@@ -3087,10 +3064,10 @@ class MainWindow(QtWidgets.QMainWindow):
         dl_sim_BUTTON.setStyleSheet("border-color: green")
         dl_sim_BUTTON.setEnabled(False)
         close_sim_BUTTON.setEnabled(True)
-        pixmap = QtGui.QPixmap(os.environ["SMILEI_QT"]+"\\Ressources\\green_check_icon.jpg")
-        pixmap = pixmap.scaled(ETA_label.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation);
+        # pixmap = QtGui.QPixmap(os.environ["SMILEI_QT"]+"\\Ressources\\green_check_icon.jpg")
+        # pixmap = pixmap.scaled(ETA_label.size(), QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation);
 
-        ETA_label.setPixmap(pixmap) #green check
+        ETA_label.setText("OK") #green check
 
         ETA_label.setStyleSheet("background-color: #80ef80")
         progress_bar.setStyleSheet(self.qss_progressBar_DOWNLOADED)
@@ -3226,7 +3203,7 @@ class MainWindow(QtWidgets.QMainWindow):
         print("downloading request for", sim_id)
 
         job_full_path = self.can_download_sim_dict[int(sim_id)]
-        print(job_full_path)
+        print("job_full_path:",job_full_path)
         self.loadthread = class_threading.ThreadDownloadSimData(job_full_path)
         self.loadthread.start()
         # self.downloadSimData(job_full_path) #"_NEW_PLASMA_/new_plasma_LG_optic_ne0.01_dx12/")
