@@ -30,4 +30,6 @@ Allows to access app variables and perform operation or print them to the log di
 ![image](https://github.com/user-attachments/assets/dbfd95fe-f4d3-4921-8a8a-20d3d5d9dd53)
 ![image](https://github.com/user-attachments/assets/fe041241-3d4a-435d-903d-224e4478f50b)
 ![image](https://github.com/user-attachments/assets/441b0904-a398-4953-97ed-e1571ccd1adc)
+![image](https://github.com/user-attachments/assets/6c67e7a8-072a-4069-8e14-87931dd86560)
+
 
