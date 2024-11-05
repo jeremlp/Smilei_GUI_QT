@@ -22,6 +22,7 @@ Only the plotted data are stored in memory, making possible to open multiple dia
 Allows to access app variables and perform operation or print them to the log dialog. Memory dialog allows fast and accurate memory management for large simulation diagnostics
 
 ### App screenshot
+## Diagnostics and simulations progress
 ![image](https://github.com/user-attachments/assets/2388e919-629c-47ea-90aa-7ae414eabeec)
 
 ![image](https://github.com/user-attachments/assets/3a88b6f6-8c21-4bed-af4a-af42306c8583)
@@ -30,6 +31,10 @@ Allows to access app variables and perform operation or print them to the log di
 ![image](https://github.com/user-attachments/assets/dbfd95fe-f4d3-4921-8a8a-20d3d5d9dd53)
 ![image](https://github.com/user-attachments/assets/fe041241-3d4a-435d-903d-224e4478f50b)
 ![image](https://github.com/user-attachments/assets/441b0904-a398-4953-97ed-e1571ccd1adc)
-![image](https://github.com/user-attachments/assets/6c67e7a8-072a-4069-8e14-87931dd86560)
+
+## Tools & utils
+![image](https://github.com/user-attachments/assets/4c83fb87-866b-4b43-bbbf-b97332931302)
+
+
 
 
