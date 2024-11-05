@@ -33,6 +33,7 @@ import scipy
 
 import ctypes
 
+import tools_dialog
 import log_dialog
 import IPython_dialog
 import memory_dialog
@@ -210,7 +211,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.12.0', 'Diag ID dialog'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.12.2', 'Diag ID dialog'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -231,9 +232,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionOpenIPython = QtWidgets.QAction("Open IPython",self)
         self.actionOpenMemory = QtWidgets.QAction("Open Memory Graph",self)
         self.actionOpenTree = QtWidgets.QAction("Open Tree Diag_ID",self)
+        self.actionOpenAllTools = QtWidgets.QAction("OPEN ALL TOOLS",self)
+
 
         self.actionDiagScalar = QtWidgets.QAction("Scalar",self)
         self.actionDiagFields = QtWidgets.QAction("Fields",self)
+        self.actionDiagIntensity = QtWidgets.QAction("Intensity",self)
         self.actionDiagTrack = QtWidgets.QAction("Track",self)
         self.actionDiagPlasma = QtWidgets.QAction("Plasma",self)
         self.actionDiagPlasma = QtWidgets.QAction("Plasma",self)
@@ -243,6 +247,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.actionDiagScalar.setCheckable(True)
         self.actionDiagFields.setCheckable(True)
+        self.actionDiagIntensity.setCheckable(True)
+
         self.actionDiagTrack.setCheckable(True)
         self.actionDiagPlasma.setCheckable(True)
         self.actionDiagBinning.setCheckable(True)
@@ -251,14 +257,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionTornado.setCheckable(True)
 
         self.fileMenu.addAction(self.actionOpenSim)
+        self.fileMenu.addSeparator()
         self.fileMenu.addAction(self.actionOpenLogs)
         self.fileMenu.addAction(self.actionOpenIPython)
         self.fileMenu.addAction(self.actionOpenMemory)
         self.fileMenu.addAction(self.actionOpenTree)
+        self.fileMenu.addSeparator()
+        self.fileMenu.addAction(self.actionOpenAllTools)
+        
         self.menuBar.addAction(self.fileMenu.menuAction())
 
         self.editMenu.addAction(self.actionDiagScalar)
         self.editMenu.addAction(self.actionDiagFields)
+        self.editMenu.addAction(self.actionDiagIntensity)
         self.editMenu.addAction(self.actionDiagTrack)
         self.editMenu.addAction(self.actionDiagPlasma)
         self.editMenu.addAction(self.actionDiagBinning)
@@ -880,9 +891,96 @@ class MainWindow(QtWidgets.QMainWindow):
         self.binning_Widget = QtWidgets.QWidget()
         self.binning_Widget.setLayout(self.layoutBinning)
 
+        #---------------------------------------------------------------------
+        # TAB 6
+        #---------------------------------------------------------------------
+        self.figure_6 = Figure()
+        self.canvas_6 = FigureCanvas(self.figure_6)
+        self.plt_toolbar_6 = NavigationToolbar(self.canvas_6, self)
+        self.plt_toolbar_6.setFixedHeight(self.toolBar_height)
+                
+        layoutTabSettingsCheck = QtWidgets.QHBoxLayout()
+        self.intensity_names =["Ex","Ey"]
+        self.intensity_check_list = []
+        for i, name in enumerate(self.intensity_names):
+            intensity_CHECK = QtWidgets.QCheckBox(name)
+            self.intensity_check_list.append(intensity_CHECK)
+            # layoutFieldsCheck = self.creatPara(name + " ", fields_CHECK,adjust_label=True,fontsize=12)
+            # layoutFieldsCheck.setSpacing(0)
+            if i in [3,6,8]:
+                separator1 = QtWidgets.QFrame()
+                separator1.setFrameShape(QtWidgets.QFrame.VLine)
+                separator1.setLineWidth(1)
+                layoutTabSettingsCheck.addWidget(separator1)
+            # layoutTabSettingsCheck.addLayout(layoutFieldsCheck)
+            layoutTabSettingsCheck.addWidget(intensity_CHECK)
+        
+        self.intensity_check_list[0].setChecked(True)
+        # self.Ey_CHECK.setChecked(True)
+        self.intensity_check_list[1].setChecked(True)
+        
+        layoutTabSettingsCheck.setSpacing(20)
+        layoutTabSettingsCheck.setContentsMargins(0, 0, 0, 0)
+        
+        self.intensity_sim_cut_direction_BOX = QtWidgets.QComboBox()
+        self.intensity_sim_cut_direction_BOX.addItem("Longitudinal cut")
+        self.intensity_sim_cut_direction_BOX.addItem("Transverse cut")
+        
+        self.intensity_use_autoscale_CHECK = QtWidgets.QCheckBox("Use autoscale")
+        
+        layoutTabSettingsCutDirection = QtWidgets.QHBoxLayout()
+        layoutTabSettingsCutDirection.addWidget(self.intensity_sim_cut_direction_BOX)
+        layoutTabSettingsCutDirection.addWidget(self.intensity_use_autoscale_CHECK)
+        
+        
+        layoutTabSettings = QtWidgets.QVBoxLayout()
+        layoutTabSettings.addLayout(layoutTabSettingsCheck)
+        layoutTabSettings.addLayout(layoutTabSettingsCutDirection)
+        
+        
+        self.intensity_time_SLIDER = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.intensity_time_SLIDER.setRange(0,1)
+        self.intensity_xcut_SLIDER = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.intensity_xcut_SLIDER.setRange(0,1)
+        
+        self.intensity_time_EDIT = QtWidgets.QLineEdit("0")
+        
+        self.intensity_time_EDIT.setValidator(self.float_validator)
+        self.intensity_time_EDIT.setMaximumWidth(70) #42 FOR TOWER PC
+        
+        self.intensity_xcut_EDIT = QtWidgets.QLineEdit("0")
+        self.intensity_xcut_EDIT.setValidator(self.float_validator)
+        self.intensity_xcut_EDIT.setMaximumWidth(70)
+        
+        self.intensity_play_time_BUTTON = QtWidgets.QPushButton("Play")
+        self.intensity_play_time_BUTTON.setMinimumHeight(15)
+        layoutTimeSlider = self.creatPara("t/t0=", self.intensity_time_EDIT ,adjust_label=True)
+        layoutTimeSlider.addWidget(self.intensity_time_SLIDER)
+        layoutTimeSlider.addWidget(self.intensity_play_time_BUTTON)
+        
+        
+        layoutXcutSlider = self.creatPara("x/𝝀=", self.intensity_xcut_EDIT)
+        layoutXcutSlider.addWidget(self.intensity_xcut_SLIDER)
+        
+        layoutTabSettings.addLayout(layoutTimeSlider)
+        layoutTabSettings.addLayout(layoutXcutSlider)
+        layoutTabSettings.addWidget(self.plt_toolbar_6)
+        
+        self.intensity_groupBox = QtWidgets.QGroupBox("Intensity Diagnostics")
+        self.intensity_groupBox.setFixedHeight(210)
+        self.intensity_groupBox.setLayout(layoutTabSettings)
+        
+        self.layoutIntensity = QtWidgets.QVBoxLayout()
+        self.layoutIntensity.addWidget(self.intensity_groupBox)
+        self.layoutIntensity.addWidget(self.canvas_6)
+        
+        self.intensity_Widget = QtWidgets.QWidget()
+        self.intensity_Widget.setLayout(self.layoutIntensity)
+
+
 
         #---------------------------------------------------------------------
-        # TAB 6 TORNADO
+        # TAB 7 TORNADO
         #---------------------------------------------------------------------
         self.tornado_Widget = QtWidgets.QWidget()
 
@@ -1022,12 +1120,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.binning_log_CHECK.clicked.connect(lambda: self.onUpdateTabBinning(100))
         self.binning_time_SLIDER.sliderMoved.connect(lambda: self.onUpdateTabBinning(100))
 
+        for i in range(len(self.intensity_check_list)):
+            self.intensity_check_list[i].clicked.connect(partial(self.onUpdateTabIntensity,i))
+
+        self.intensity_time_SLIDER.sliderMoved.connect(lambda: self.onUpdateTabIntensity(100))
+        self.intensity_time_SLIDER.sliderPressed.connect(lambda: self.onUpdateTabIntensity(100))
+        self.intensity_time_EDIT.returnPressed.connect(lambda: self.onUpdateTabIntensity(101))
+        self.intensity_xcut_SLIDER.sliderMoved.connect(lambda: self.onUpdateTabIntensity(200))
+        self.intensity_xcut_SLIDER.sliderPressed.connect(lambda: self.onUpdateTabIntensity(200))
+        self.intensity_xcut_EDIT.returnPressed.connect(lambda: self.onUpdateTabIntensity(201))
+
+        self.intensity_play_time_BUTTON.clicked.connect(lambda: self.onUpdateTabIntensity(1000))
+        self.sim_cut_direction_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabIntensity(-100))
+
 
         self.tornado_refresh_BUTTON.clicked.connect(self.call_ThreadDownloadSimJSON)
 
         #Open and Close Tabs
         self.actionDiagScalar.toggled.connect(lambda: self.onMenuTabs("SCALAR"))
         self.actionDiagFields.toggled.connect(lambda: self.onMenuTabs("FIELDS"))
+        self.actionDiagIntensity.toggled.connect(lambda: self.onMenuTabs("INTENSITY"))
         self.actionDiagTrack.toggled.connect(lambda: self.onMenuTabs("TRACK"))
         self.actionDiagPlasma.toggled.connect(lambda: self.onMenuTabs("PLASMA"))
         self.actionDiagBinning.toggled.connect(lambda: self.onMenuTabs("BINNING"))
@@ -1041,6 +1153,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionOpenIPython.triggered.connect(self.onOpenIPython)
         self.actionOpenMemory.triggered.connect(self.onOpenMemory)
         self.actionOpenTree.triggered.connect(self.onOpenTree)
+        self.actionOpenAllTools.triggered.connect(self.onOpenAllTools)
         
         self.memory_update_TIMER = QtCore.QTimer()
         self.memory_update_TIMER.setInterval(5000) #in ms
@@ -1064,6 +1177,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.INIT_tabTrack = None
         self.INIT_tabPlasma = None
         self.INIT_tabCompa = None
+        self.INIT_tabIntensity = None
         self.INIT_tabTornado = True
 
         self.loop_in_process = False
@@ -1131,7 +1245,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def onOpenLogs(self):
         self.onCloseLogs()
         sys.stdout = self.spyder_default_stdout
-        self.logs_DIALOG = log_dialog.LogsDialog(self.spyder_default_stdout,app)
+        self.logs_DIALOG = log_dialog.LogsDialog(self.spyder_default_stdout, app)
         if self.logs_history_STR is not None: self.logs_DIALOG.initHistory(self.logs_history_STR)
         self.logs_DIALOG.show()
 
@@ -1148,6 +1262,44 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tree_DIALOG = tree_dialog.TreeDialog(self)
         self.tree_DIALOG.show()
         return
+    def onOpenAllTools(self):
+        
+        self.all_tools_DIALOG = QtWidgets.QMainWindow()
+        central_widget = QtWidgets.QWidget(self.all_tools_DIALOG)
+        self.all_tools_DIALOG.setCentralWidget(central_widget)
+        grid_layout = QtWidgets.QGridLayout()
+        height = 800
+
+        widget1 = tree_dialog.TreeDialog(self)
+        widget1.setMinimumWidth(int(1.0*height))
+        widget2 = memory_dialog.MemoryDialog(self)
+        widget3 = IPython_dialog.IPythonDialog(self)
+        widget4 = log_dialog.LogsDialog(self.spyder_default_stdout, app)
+        if self.logs_history_STR is not None: widget4.initHistory(self.logs_history_STR)
+
+        # widget1 = QtWidgets.QLabel("Widget 1", self)
+        # widget2 = QtWidgets.QLabel("Widget 2", self)
+        # widget3 = QtWidgets.QLabel("Widget 3", self)
+        # widget4 = QtWidgets.QLabel("Widget 4", self)
+        # # Add widgets to the layout
+        grid_layout.addWidget(widget1, 0, 0)  # Row 0, Column 0
+        grid_layout.addWidget(widget2, 0, 1)  # Row 0, Column 1
+        grid_layout.addWidget(widget3, 1, 0)  # Row 1, Column 0
+        grid_layout.addWidget(widget4, 1, 1)  # Row 1, Column 1
+
+
+        # Set the window title and dimensions
+        self.all_tools_DIALOG.setWindowTitle("Smilei ALL TOOLS")
+        self.all_tools_DIALOG.setGeometry(100, 100, int(height*16/9), height)
+        
+        central_widget.setLayout(grid_layout)
+        self.all_tools_DIALOG.show()
+        
+        # self.all_tools_DIALOG = tools_dialog.ToolsDialog(self, app)
+        # self.all_toools_DIALOG.show()
+        return
+    
+    
     def updateInfoLabel(self):
         mem_prc = self.MEMORY().used*100/self.MEMORY().total
         stor_go = self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30)
@@ -1289,6 +1441,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.INIT_tabTrack = True
         self.INIT_tabPlasma = True
         self.INIT_tabCompa = True
+        self.INIT_tabIntensity = True
 
         self.updateInfoLabel()
         if self.actionDiagScalar.isChecked(): self.onUpdateTabScalar(0)
@@ -1402,6 +1555,22 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.INIT_tabFields = True
                 app.processEvents()
                 self.onUpdateTabFields(0)
+                
+        if tab_name == "INTENSITY":
+            if not self.actionDiagIntensity.isChecked():
+                for currentIndex in range(self.programm_TABS.count()):
+                    if self.programm_TABS.tabText(currentIndex) == "INTENSITY":
+                        self.programm_TABS.removeTab(currentIndex)
+                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        self.onRemoveIntensity()
+            else:
+                self.programm_TABS.addTab(self.intensity_Widget,"INTENSITY")
+                self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
+                self.programm_TABS.show()
+                self.smilei_icon_BUTTON.hide()
+                self.INIT_tabIntensity = True
+                app.processEvents()
+                self.onUpdateTabIntensity(0)
 
         if tab_name == "TRACK":
             if not self.actionDiagTrack.isChecked():
@@ -1884,7 +2053,90 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.loop_in_process = False
         self.updateInfoLabel()
+    
+    def onUpdateTabIntensity(self,check_id):
+        boolList = [check.isChecked() for check in self.intensity_check_list]
+        l0 = 2*pi
+        if self.INIT_tabIntensity == None or self.is_sim_loaded == False:
+            return
+        if self.INIT_tabIntensity:
+            print("===== INIT INTENSITY TAB =====")
+            print(boolList)
+            
+            self.INIT_tabIntensity = False
+        
+            Ey_diag = self.S.Probe("Ey_intensity","Ey")
+            Ey = np.array(Ey_diag.getData()).astype(np.float32)
+            
+            W = 15
+            
+            self.intensity_paxisX = Ey_diag.getAxis("axis1")[:,0]
+            self.intensity_paxisY = Ey_diag.getAxis("axis2")[:,1]-self.Ltrans/2
+            self.intensity_paxisZ = Ey_diag.getAxis("axis3")[:,2]-self.Ltrans/2
+            self.extentYZ = [self.intensity_paxisY[0]/self.l0,self.intensity_paxisY[-1]/self.l0,self.intensity_paxisZ[0]/self.l0,self.intensity_paxisZ[-1]/self.l0]
+            self.extentXY = [self.intensity_paxisX[0]/self.l0,self.intensity_paxisX[-1]/self.l0,self.intensity_paxisY[0]/self.l0,self.intensity_paxisY[-1]/self.l0]
+            self.intensity_t_range = Ey_diag.getTimes()
 
+            del Ey_diag
+
+            self.intensity_trans_mid_idx = len(self.intensity_paxisZ)//2
+            self.intensity_long_mid_idx = len(self.intensity_paxisX)//2
+            self.intensity_time_SLIDER.setMaximum(len(self.intensity_t_range)-1)
+            self.intensity_xcut_SLIDER.setMaximum(len(self.intensity_paxisX)-1)
+            
+            
+            Ey_squared_cumsum = np.cumsum(Ey**2,axis=1)
+            self.intensity_data = (Ey_squared_cumsum[:,W:] - Ey_squared_cumsum[:,:-W]) / W
+            
+            middle_trans_idx = self.intensity_data.shape[-1]//2
+            self.ax6_a = self.figure_6.add_subplot(1,2,1)
+            self.intensity_im_a = self.ax6_a.imshow(self.intensity_data[-1,:,:,self.intensity_trans_mid_idx],aspect="auto")
+            self.ax6_b = self.figure_6.add_subplot(1,2,2)
+            self.intensity_im_b = self.ax6_b.imshow(self.intensity_data[-1,-1,:,:],aspect="auto")
+            self.figure_6.colorbar(self.intensity_im_a, ax=self.ax6_a)
+            self.figure_6.colorbar(self.intensity_im_b, ax=self.ax6_b)
+            self.canvas_6.draw()
+            
+        
+        elif check_id <= 110 or ((check_id==200 or check_id==201)): #SLIDER UPDATE
+            self.timer = time.perf_counter()
+            if check_id == 101: #QLineEdit changed
+                time_edit_value = float(self.intensity_time_EDIT.text())
+                time_idx = np.where(abs(self.intensity_t_range/l0-time_edit_value)==np.min(abs(self.intensity_t_range/l0-time_edit_value)))[0][0]
+                self.intensity_time_SLIDER.setValue(time_idx)
+                self.intensity_time_EDIT.setText(str(round(self.intensity_t_range[time_idx]/l0,2)))
+            else:
+                time_idx = self.intensity_time_SLIDER.sliderPosition()
+                self.intensity_time_EDIT.setText(str(round(self.intensity_t_range[time_idx]/l0,2)))
+
+            if check_id == 201:#QSlider changed
+                xcut_edit_value = float(self.intensity_xcut_EDIT.text())
+                xcut_idx = np.where(abs(self.intensity_paxisX/l0-xcut_edit_value)==np.min(abs(self.intensity_paxisX/l0-xcut_edit_value)))[0][0]
+                self.intensity_xcut_SLIDER.setValue(xcut_idx)
+            else:
+                xcut_idx = self.intensity_xcut_SLIDER.sliderPosition()
+                self.intensity_xcut_EDIT.setText(str(round(self.intensity_paxisX[xcut_idx]/l0,2)))
+
+            self.intensity_previous_xcut_SLIDER_value = self.intensity_xcut_SLIDER.sliderPosition()
+            combo_box_index = self.sim_cut_direction_BOX.currentIndex()
+            
+            self.intensity_im_a.set_data(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx].T)
+            self.intensity_im_b.set_data(self.intensity_data[time_idx,xcut_idx,:,:].T)
+
+            # if combo_box_index==0:
+            #     for i,im in enumerate(self.intensity_image_list):
+            #             im.set_data(self.intensity_data_list[i][time_idx,:,:,self.intensity_trans_mid_idx].T)
+            #             self.figure_1.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$",**self.qss_plt_title)
+            #             if self.intensity_use_autoscale_CHECK.isChecked(): im.autoscale()
+            # else:
+            #     for i,im in enumerate(self.intensity_image_list):
+            #         im.set_data(self.intensity_data_list[i][time_idx,xcut_idx,:,:].T)
+            #         if self.intensity_use_autoscale_CHECK.isChecked(): im.autoscale()
+            #         self.figure_1.suptitle(f"$t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.canvas_6.draw()
+
+    
+    
     def onRemoveScalar(self):
         if not self.INIT_tabScalar: #IF TAB OPEN AND SIM LOADED
             gc.collect()
@@ -2701,6 +2953,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 elif binning_data.ndim == 2:
                     x_range = np.array(diag.getAxis(diag_name))
                     if diag_name == "px_av": x_range = np.array(diag.getAxis("px"))
+                    if diag_name == "ptheta": x_range = np.array(diag.getAxis("user_function0"))
 
                     if diag_name == "ekin":
                         binning_image, = ax.plot(x_range,binning_data[time_idx], label=diag_name)
@@ -2773,7 +3026,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             binning_image2 = ax2.imshow(data2[time_idx].T, extent=extent2, cmap="smilei",aspect="auto", origin="lower")
                         ax.set_xlabel("$x/\lambda$")
                         ax.set_ylabel("px")
-                    elif diag_name =="phase_space_v":
+                    elif diag_name =="phase_space_p":
                         vy_range  = diag.getAxis("py")
                         vz_range = diag.getAxis("pz")
                         extent = [vy_range[0],vy_range[-1],vz_range[0],vz_range[-1]]

@@ -20,7 +20,7 @@ from matplotlib.figure import Figure
 import datetime
 import matplotlib
 class MemoryDialog(QtWidgets.QMainWindow):
-    def __init__(self, main_app):
+    def __init__(self, main):
         super(MemoryDialog, self).__init__()
         self.setGeometry(50, 50, 600, 400)
         self.setWindowTitle("Memory Graph")
@@ -31,7 +31,7 @@ class MemoryDialog(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon('D:/JLP/CMI/_MASTER 2_/_STAGE_LULI_/SMILEI_QT_GUI/log_icon.png'))
         self.home()
 
-        self.main_app = main_app
+        self.main = main
 
         self.MEMORY = psutil.virtual_memory
 
@@ -47,6 +47,7 @@ class MemoryDialog(QtWidgets.QMainWindow):
         self.ax.grid()
         self.ax.set_xlabel("t (s)")
         self.ax.set_ylabel("Mem (%)")
+        self.ax.set_title("Memory Usage (%)")
         self.line, = self.ax.plot([],[],"-")
         self.figure.tight_layout()
 
@@ -67,6 +68,7 @@ class MemoryDialog(QtWidgets.QMainWindow):
         self.memory_update_TIMER.setInterval(self.update_ms) #in ms
         self.memory_update_TIMER.timeout.connect(self.updateGraph)
         self.memory_update_TIMER.start()
+        
 
         self.show()
 
@@ -85,6 +87,7 @@ class MemoryDialog(QtWidgets.QMainWindow):
         self.line.set_data(self.time_list,self.mem_list)
         self.ax.relim()            # Recompute the limits based on current data
         self.ax.autoscale_view()   # Apply the new limits
+        # self.figure.tight_layout()
         self.canvas.draw()
         # t1 = time.perf_counter()
         # print((t1-t0)*1000,"ms")

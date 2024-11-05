@@ -99,26 +99,26 @@ class ThreadGetFieldsProbeData(QtCore.QThread):
                 # print(fields_name)
                 if fields_names[i]=="Er":
                     T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
-                    Er = (Y*np.array(S.Probe(0,"Ey").getData()).astype(np.float32)
-                              + Z*np.array(S.Probe(0,"Ez").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    Er = (Y*np.array(S.Probe("fields","Ey").getData()).astype(np.float32)
+                              + Z*np.array(S.Probe("fields","Ez").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
                     fields_data_list.append(Er)
                     del T,X,Y,Z,Er
                 elif fields_names[i]=="Eθ":
                     T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
-                    Etheta = (Y*np.array(S.Probe(0,"Ez").getData()).astype(np.float32)
-                              - Z*np.array(S.Probe(0,"Ey").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    Etheta = (Y*np.array(S.Probe("fields","Ez").getData()).astype(np.float32)
+                              - Z*np.array(S.Probe("fields","Ey").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
                     fields_data_list.append(Etheta)
                     del T,X,Y,Z,Etheta
                 elif fields_names[i]=="Br":
                     T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
-                    Br = (Y*np.array(S.Probe(0,"By").getData()).astype(np.float32)
-                              + Z*np.array(S.Probe(0,"Bz").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    Br = (Y*np.array(S.Probe("fields","By").getData()).astype(np.float32)
+                              + Z*np.array(S.Probe("fields","Bz").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
                     fields_data_list.append(Br)
                     del T,X,Y,Z,Br
                 elif fields_names[i]=="Bθ":
                     T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
-                    Btheta = (Y*np.array(S.Probe(0,"Bz").getData()).astype(np.float32)
-                              - Z*np.array(S.Probe(0,"By").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    Btheta = (Y*np.array(S.Probe("fields","Bz").getData()).astype(np.float32)
+                              - Z*np.array(S.Probe("fields","By").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
                     fields_data_list.append(Btheta)
                     del T,X,Y,Z,Btheta
 
@@ -176,12 +176,12 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
                     BLx_trans = S.ParticleBinning("2D_Lx_W_trans")
                     plasma_data_list.append(np.array(BLx_trans.getData()))
 
-                elif selected_plasma_names[i] == "Rho":
-                    BRho_long_diag = S.Probe("long","Rho")
-                    plasma_data_list.append(np.array(BRho_long_diag.getData())*toTesla)
-                elif selected_plasma_names[i] == "Rho_trans":
-                    BRho_trans_diag = S.Probe("trans","Rho")
-                    plasma_data_list.append(np.array(BRho_trans_diag.getData())*toTesla)
+                # elif selected_plasma_names[i] == "Rho":
+                #     BRho_long_diag = S.Probe("long","Rho")
+                #     plasma_data_list.append(np.array(BRho_long_diag.getData())*toTesla)
+                # elif selected_plasma_names[i] == "Rho_trans":
+                #     BRho_trans_diag = S.Probe("trans","Rho")
+                #     plasma_data_list.append(np.array(BRho_trans_diag.getData())*toTesla)
 
                 elif selected_plasma_names[i] == "jx_av":
                     Bvx_long = S.ParticleBinning("2D_jx")
@@ -194,7 +194,7 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
                     Bvx_long = S.ParticleBinning("2D_rho")
                     plasma_data_list.append(np.mean(np.array(Bvx_long.getData()),axis=-1))
                 elif selected_plasma_names[i] == "rho_trans":
-                    Bvx_trans = S.ParticleBinning("r2D_ho_trans")
+                    Bvx_trans = S.ParticleBinning("2D_rho_trans")
                     plasma_data_list.append(np.array(Bvx_trans.getData()))
                     
                 elif selected_plasma_names[i] == "px":

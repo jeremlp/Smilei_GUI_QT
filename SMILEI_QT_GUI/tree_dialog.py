@@ -32,15 +32,18 @@ def open_folder(path):
         run_time, push_time = utils.getSimRunTime(path)
         run_time_format = f"{(run_time/60)//60:.0f}h{(run_time/60)%60:0>2.0f}"
         
-        with open(f'{path}\log') as f:
-            lines = f.readlines()
-        for l in lines:
-            if "assumes a global number of" in l:
-                l_list = l.split()
-                for i,c in enumerate(l_list):
-                    if c == "of":
-                        nodes = int(l_list[i+1])//24//2
-                        break
+        try:
+            with open(f'{path}\log') as f:
+                lines = f.readlines()
+            for l in lines:
+                if "assumes a global number of" in l:
+                    l_list = l.split()
+                    for i,c in enumerate(l_list):
+                        if c == "of":
+                            nodes = int(l_list[i+1])//24//2
+                            break
+        except FileNotFoundError:
+            nodes = "NA"
         
         dic['DIAG_ID'] = diag_id
         dic['RUN_TIME'] = run_time_format
@@ -81,7 +84,7 @@ class TreeDialog(QMainWindow):
     
         self.tree = QTreeWidget()
         self.tree.setColumnCount(2)
-        self.tree.setHeaderLabels(["Simulation folder", "DIAG_ID","RUN_TIME", "NODES"])
+        self.tree.setHeaderLabels(["SIMULATION FOLDER", "DIAG ID","RUN_TIME", "NODES"])
                 
         self.setStyleSheet("""
             QHeaderView::section {
@@ -94,8 +97,10 @@ class TreeDialog(QMainWindow):
             }
             QTreeWidget {
                 background-color: #f0f0f0; /* Light gray background for tree */
+                alternate-background-color: #ebebf0;
                 color: #333; /* Dark text color */
             }
+            QTreeWidget::item { margin: 5px; }
  
             
         """)
@@ -107,7 +112,7 @@ class TreeDialog(QMainWindow):
         # self.tree.setColumnWidth(2, 150)  # Set a fixed width for the "NDS" column
 
         self.tree.setAlternatingRowColors(True)  # Alternate row colors for better readability
-        self.tree.setStyleSheet("QTreeWidget::item { margin: 5px; }")  # Adds spacing within each item
+        # self.tree.setStyleSheet("QTreeWidget::item { margin: 5px; }")  # Adds spacing within each item
         
 
         # Set header alignment to center
