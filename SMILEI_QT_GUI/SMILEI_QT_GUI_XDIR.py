@@ -36,6 +36,7 @@ import ctypes
 import log_dialog
 import IPython_dialog
 import memory_dialog
+import tree_dialog
 import paramiko_SSH_SCP_class
 import class_threading
 import generate_diag_id
@@ -46,7 +47,8 @@ from pathlib import Path
 from functools import partial
 # from win11toast import toast
 from pyqttoast import ToastPreset
-from utils import Popup, encrypt
+import utils
+# from utils import Popup, encrypt
 import decimal
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -208,7 +210,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.11.8', 'Title font'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.12.0', 'Diag ID dialog'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -228,6 +230,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionOpenLogs = QtWidgets.QAction("Open Logs",self)
         self.actionOpenIPython = QtWidgets.QAction("Open IPython",self)
         self.actionOpenMemory = QtWidgets.QAction("Open Memory Graph",self)
+        self.actionOpenTree = QtWidgets.QAction("Open Tree Diag_ID",self)
 
         self.actionDiagScalar = QtWidgets.QAction("Scalar",self)
         self.actionDiagFields = QtWidgets.QAction("Fields",self)
@@ -251,6 +254,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fileMenu.addAction(self.actionOpenLogs)
         self.fileMenu.addAction(self.actionOpenIPython)
         self.fileMenu.addAction(self.actionOpenMemory)
+        self.fileMenu.addAction(self.actionOpenTree)
         self.menuBar.addAction(self.fileMenu.menuAction())
 
         self.editMenu.addAction(self.actionDiagScalar)
@@ -1036,7 +1040,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionOpenLogs.triggered.connect(self.onOpenLogs)
         self.actionOpenIPython.triggered.connect(self.onOpenIPython)
         self.actionOpenMemory.triggered.connect(self.onOpenMemory)
-
+        self.actionOpenTree.triggered.connect(self.onOpenTree)
+        
         self.memory_update_TIMER = QtCore.QTimer()
         self.memory_update_TIMER.setInterval(5000) #in ms
         self.memory_update_TIMER.timeout.connect(self.updateInfoLabel)
@@ -1139,7 +1144,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.memory_DIALOG = memory_dialog.MemoryDialog(self)
         self.memory_DIALOG.show()
         return
-
+    def onOpenTree(self):
+        self.tree_DIALOG = tree_dialog.TreeDialog(self)
+        self.tree_DIALOG.show()
+        return
     def updateInfoLabel(self):
         mem_prc = self.MEMORY().used*100/self.MEMORY().total
         stor_go = self.DISK(os.environ['SMILEI_CLUSTER']).free/(2**30)
@@ -1224,11 +1232,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.Llong_LABEL.setText(f"{self.Llong/l0:.1f}𝝀")
         self.tsim_LABEL.setText(f"{self.tsim/l0:.1f}𝝀")
 
-        run_time, push_time = self.getSimRunTime(self.S._results_path[0])
+        run_time, push_time = utils.getSimRunTime(self.S._results_path[0])
         NODES = self.S.namelist.smilei_mpi_size//2
 
         self.run_time_LABEL.setText(f"{(run_time/60)//60:.0f}h{(run_time/60)%60:0>2.0f} | {NODES} nds ({push_time:.0f} ns)")
-        diag_id_full, diag_id = generate_diag_id.get_diag_id(self.sim_directory_path+"/laser_propagation_3d.py")
+        diag_id = generate_diag_id.get_diag_id(self.sim_directory_path+"/laser_propagation_3d.py")
         self.diag_id_LABEL.setText(f"D{diag_id}")
 
         self.intensity_SI = (self.a0/0.85)**2 *10**18 #W/cm^2
@@ -1940,7 +1948,7 @@ class MainWindow(QtWidgets.QMainWindow):
             try:
                 T0 = self.S.TrackParticles(track_name, axes=["x","y","z","py","pz","px"])
             except Exception:
-                Popup().showError("No TrackParticles diagnostic found")
+                utils.Popup().showError("No TrackParticles diagnostic found")
                 return
 
             self.track_N_tot = T0.nParticles
@@ -2069,6 +2077,9 @@ class MainWindow(QtWidgets.QMainWindow):
         return
 
     def onUpdateTabPlasmaFigure(self, plasma_data_list_used_selected_plasma_names):
+        if len(plasma_data_list_used_selected_plasma_names)==1:
+            utils.Popup().showError(f"Could not fine Plasma Diagnostic\n{plasma_data_list_used_selected_plasma_names}")
+            return
         plasma_data_list, used_selected_plasma_names = plasma_data_list_used_selected_plasma_names
         l0=2*pi
         boolList = [check.isChecked() for check in self.plasma_check_list]
@@ -2205,7 +2216,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plasma_paxisX_long = Bx_long_diag.getAxis("axis1")[:,0]
             self.plasma_paxisY_long = Bx_long_diag.getAxis("axis2")[:,1]
             self.plasma_t_range = Bx_long_diag.getTimes()
-            self.av_plasma_t_range = self.S.ParticleBinning("weight_av").getTimes()
+            try:
+                self.av_plasma_t_range = self.S.ParticleBinning("2D_weight_av").getTimes()
+            except:
+                self.av_plasma_t_range = self.S.ParticleBinning("weight_av").getTimes()
+
 
 
             Bx_trans_diag = self.S.Probe(1,"Bx")
@@ -2599,7 +2614,7 @@ class MainWindow(QtWidgets.QMainWindow):
             # Popup().showError("Simulation not loaded")
             return
         if is_compa and not self.is_compa_sim_loaded:
-            Popup().showError("2nd simulation not loaded")
+            utils.Popup().showError("2nd simulation not loaded")
             return
 
         if not is_compa:
@@ -2666,7 +2681,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         diag2 = self.compa_S.ParticleBinning(diag_name)
                         binning_data2 = np.array(diag2.getData())
                 except IndexError:
-                    Popup().showError(f'No ParticleBinning diagnostic "{diag_name}" found')
+                    utils.Popup().showError(f'No ParticleBinning diagnostic "{diag_name}" found')
                     return
 
                 t_range = diag.getTimes()
@@ -2685,6 +2700,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     if self.binning_log_CHECK.isChecked(): ax.set_yscale("log")
                 elif binning_data.ndim == 2:
                     x_range = np.array(diag.getAxis(diag_name))
+                    if diag_name == "px_av": x_range = np.array(diag.getAxis("px"))
+
                     if diag_name == "ekin":
                         binning_image, = ax.plot(x_range,binning_data[time_idx], label=diag_name)
                         binning_image_list.append(binning_image)
@@ -2920,7 +2937,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     finished_sim_path = self.previous_sim_dict[str(old_sim_id_int)]["job_full_path"]
                     finished_sim_name = self.previous_sim_dict[str(old_sim_id_int)]["job_full_name"]
                     print(finished_sim_path,"download is available ! \a") #\a
-                    Popup().showToast('Tornado download is available', finished_sim_name)
+                    utils.Popup().showToast('Tornado download is available', finished_sim_name)
 
                     self.finished_sim_hist.append(old_sim_id_int)
                     self.running_sim_hist.remove(old_sim_id_int)
@@ -3010,7 +3027,7 @@ class MainWindow(QtWidgets.QMainWindow):
         host = "llrlsi-gw.in2p3.fr"
         user = "jeremy"
         with open('../tornado_pwdfile.txt', 'r') as f: pwd_crypt = f.read()
-        pwd = encrypt(pwd_crypt,-2041000*2-1)
+        pwd = utils.encrypt(pwd_crypt,-2041000*2-1)
         remote_path = "/sps3/jeremy/LULI/"
         ssh_key_filepath = r"C:\Users\jerem\.ssh\id_rsa.pub"
         remote_path = "/sps3/jeremy/LULI/"
@@ -3039,7 +3056,7 @@ class MainWindow(QtWidgets.QMainWindow):
         ETA_label.setText("DL")
         return
     def onUpdateDownloadBar(self, total_size, job_full_path, sim_id):
-        general_folder_name = job_full_path[18:]
+        general_folder_name = job_full_path[27:]
         local_folder = os.environ["SMILEI_CLUSTER"]
         local_sim_path = f"{local_folder}\\{general_folder_name}"
 
@@ -3073,7 +3090,7 @@ class MainWindow(QtWidgets.QMainWindow):
         progress_bar.setStyleSheet(self.qss_progressBar_DOWNLOADED)
 
         print(sim_id,"download is finished ! \a") #\a
-        Popup().showToast('Tornado download is finished', sim_id,ToastPreset.INFORMATION)
+        utils.Popup().showToast('Tornado download is finished', sim_id,ToastPreset.INFORMATION)
 
         return
 
@@ -3214,17 +3231,6 @@ class MainWindow(QtWidgets.QMainWindow):
         d=(decimal.Decimal(str(x))*shift).normalize()
         m,e=d.to_eng_string().split('E')
         return m[:4] + " " + prefix[int(e)//3] + baseunit
-
-    def getSimRunTime(self, sim_path):
-        with open(sim_path+"\\log") as f:
-            text = f.readlines()
-            for i, line in enumerate(text):
-                if "push time [ns]" in line:
-                    pt = int(np.mean([int(text[i+n].split()[-1]) for n in range(1,40)]))
-                    print("-----------------")
-                if "Time_in_time_loop" in line:
-                    run_time = float(line.split()[1])
-        return run_time, pt
 
 
 class ProxyStyle(QtWidgets.QProxyStyle):

@@ -6,7 +6,7 @@ Created on Fri Oct 18 11:39:03 2024
 """
 from pyqttoast import Toast, ToastPreset
 from PyQt5 import QtWidgets, QtCore, QtGui
-
+import numpy as np
 class Popup():
 
     def showToast(self,msg1,msg2=None, preset=ToastPreset.SUCCESS):
@@ -41,3 +41,14 @@ def encrypt(text,s):
        else:
           result += chr((ord(char) + s - 48) % 26 + 48)
     return result
+
+def getSimRunTime(sim_path):
+    with open(sim_path+"\\log") as f:
+        text = f.readlines()
+        for i, line in enumerate(text):
+            if "push time [ns]" in line:
+                pt = int(np.mean([int(text[i+n].split()[-1]) for n in range(1,40)]))
+                # print("-----------------")
+            if "Time_in_time_loop" in line:
+                run_time = float(line.split()[1])
+    return run_time, pt

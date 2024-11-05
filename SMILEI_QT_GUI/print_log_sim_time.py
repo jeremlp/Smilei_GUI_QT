@@ -8,7 +8,7 @@ Created on Wed Oct  9 14:30:39 2024
 import os
 import numpy as np
 
-folder = "D:\JLP\CMI\_MASTER_2_\_STAGE_LULI_\CLUSTER\performance"
+folder = f"{os.environ['SMILEI_CLUSTER']}"
 # folder = "D:\JLP\CMI\_MASTER_2_\_STAGE_LULI_\CLUSTER"
 subfolders = [ f.path for f in os.scandir(folder) if f.is_dir() ]
 # subfolders = [r"D:\JLP\CMI\_MASTER_2_\_STAGE_LULI_\CLUSTER\test_base_script_plasma_OAM_XDIR_NO_IONS",

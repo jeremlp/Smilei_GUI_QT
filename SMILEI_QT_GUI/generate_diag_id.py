@@ -7,12 +7,15 @@ Created on Sat Oct 26 10:35:27 2024
 
 import hashlib
 
-def get_diag_id(file):
-
+def generate_diag_id(file, insert_id=False):
     with open(file) as f:
         lines = f.readlines()
     cond=0
+    diag_id_idx = None
+
     for i,l in enumerate(lines):
+        if "DIAG_ID:" in l:
+            diag_id_idx = i
         if l == "#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#\n":
             cond +=1
             if cond ==2:
@@ -23,11 +26,39 @@ def get_diag_id(file):
     hashing_func = hashlib.md5
     str2int = lambda s : int(hashing_func(s.encode()).hexdigest(), 16)
 
-    v = str2int(diag_txt)
-    return v,int(str(v)[::9])
+    diag_id_full = str2int(diag_txt)
+    diag_id = int(str(diag_id_full)[::9])
+
+    if insert_id: #insert diag_id in namelist
+        if diag_id_idx is None:
+            lines.insert(diag_idx-5, f"\n#DIAG_ID: {diag_id}")
+        else:
+            lines[diag_id_idx] = f"#DIAG_ID: {diag_id}\n"
+
+        with open(file, "w") as f:
+            f.writelines(lines)
+        print(f"Inserted '#DIAG_ID: {diag_id}' in namelist")
+
+    return diag_id_full, diag_id
+
+
+def get_diag_id(file):
+        with open(file) as f:
+            lines = f.readlines()
+        for i,l in enumerate(lines):
+            if "DIAG_ID:" in l:
+                diag_id = l.split(" ")[-1]
+                return int(diag_id)
+        diag_id_full, diag_id = generate_diag_id(file)
+        return int(diag_id)
+
 
 if __name__ == '__main__':
     import sys
-    file = 'C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_OAM_Long/laser_propagation_3d.py'
+    import os
+    file = f'{os.environ["SMILEI_CLUSTER"]}/SIM_PHYSICAL/sim_OAM_Long/laser_propagation_3d.py'
+    print(generate_diag_id(file,insert_id=True))
     print(get_diag_id(file))
+
+
 
