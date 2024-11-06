@@ -129,6 +129,7 @@ class TreeDialog(QMainWindow):
         self.setCentralWidget(central_widget)
         
         self.populate_tree(self.data)
+        self.tree.expandAll()
         
         self.tree.resizeColumnToContents(0)
         
