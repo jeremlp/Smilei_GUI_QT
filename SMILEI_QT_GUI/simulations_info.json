@@ -1,13 +1,33 @@
 {
-    "50288": {
-        "job_id": "50288",
+    "50334": {
+        "job_id": "50334",
         "job_full_path": "/grid_mnt/sps3/jeremy/LULI/plasma_OAM_XDIR_NO_IONS_DIAGS",
         "job_full_name": "plasma_OAM_XDIR_NO_IONS_DIAGS.sh",
-        "NODES": "5",
-        "progress": 0.9472743521000894,
-        "ETA": "0h04",
-        "push_time": 3201,
-        "diag_id": 18457
+        "NODES": "3",
+        "progress": 0,
+        "ETA": "-",
+        "push_time": -1,
+        "diag_id": 16355
     },
-    "datetime": "06/11 - 16h55"
+    "50335": {
+        "job_id": "50335",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_PHYSICAL/sim_NOAM_Long",
+        "job_full_name": "sim_NOAM_Long.sh",
+        "NODES": "3",
+        "progress": 0,
+        "ETA": "-",
+        "push_time": -1,
+        "diag_id": 16355
+    },
+    "50336": {
+        "job_id": "50336",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_PHYSICAL/sim_SAM_Long",
+        "job_full_name": "sim_SAM_Long.sh",
+        "NODES": "3",
+        "progress": 0,
+        "ETA": "-",
+        "push_time": -1,
+        "diag_id": 16355
+    },
+    "datetime": "07/11 - 16h21"
 }
