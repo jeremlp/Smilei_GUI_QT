@@ -169,11 +169,11 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
                     Bweight_ions_long = S.ParticleBinning("2D_weight_ions")
                     plasma_data_list.append(np.mean(np.array(Bweight_ions_long.getData())/ne,axis=-1))
 
-                elif selected_plasma_names[i] == "Lx_av":
-                    BLx_long = S.ParticleBinning("2D_Lx_W")
-                    plasma_data_list.append(np.mean(np.array(BLx_long.getData()),axis=-1))
+                # elif selected_plasma_names[i] == "Lx_av":
+                #     BLx_long = S.ParticleBinning("2D_Lx")
+                #     plasma_data_list.append(np.mean(np.array(BLx_long.getData()),axis=-1))
                 elif selected_plasma_names[i] == "Lx_trans":
-                    BLx_trans = S.ParticleBinning("2D_Lx_W_trans")
+                    BLx_trans = S.ParticleBinning("2D_Lx_trans")
                     plasma_data_list.append(np.array(BLx_trans.getData()))
 
                 # elif selected_plasma_names[i] == "Rho":
@@ -203,17 +203,17 @@ class ThreadGetPlasmaProbeData(QtCore.QThread):
 
                     
                 elif selected_plasma_names[i] == "pθ_av":
-                    Bptheta_long = S.ParticleBinning("2D_ptheta_W")
+                    Bptheta_long = S.ParticleBinning("2D_ptheta")
                     plasma_data_list.append(np.mean(np.array(Bptheta_long.getData()),axis=-1))
                 elif selected_plasma_names[i] == "pθ_trans":
-                    Bptheta_trans = S.ParticleBinning("2D_ptheta_W_trans")
+                    Bptheta_trans = S.ParticleBinning("2D_ptheta_trans")
                     plasma_data_list.append(np.array(Bptheta_trans.getData()))
 
                 elif selected_plasma_names[i] == "Ekin":
-                    BEkin_long = S.ParticleBinning("2D_ekin_W")
+                    BEkin_long = S.ParticleBinning("2D_ekin")
                     plasma_data_list.append(np.mean(np.array(BEkin_long.getData()),axis=-1))
                 elif selected_plasma_names[i] == "Ekin_trans":
-                    BEkin_trans = S.ParticleBinning("2D_ekin_W_trans")
+                    BEkin_trans = S.ParticleBinning("2D_ekin_trans")
                     plasma_data_list.append(np.array(BEkin_trans.getData()))
 
                 elif selected_plasma_names[i] == "Jx":
@@ -397,16 +397,16 @@ class ThreadGetAMIntegral(QtCore.QThread):
     def getAMIntegral(self, S):
         print("THREAD getAMIntegral")
         # t0 = time.perf_counter()
-        fields_paxisX = self.S.Probe(0,"Ex").getAxis("axis1")[:,0]
-        fields_paxisY = self.S.Probe(0,"Ex").getAxis("axis2")[:,1]-self.S.namelist.Ltrans/2
-        fields_paxisZ = self.S.Probe(0,"Ex").getAxis("axis3")[:,2]-self.S.namelist.Ltrans/2
+        fields_paxisX = self.S.Probe("fields","Ex").getAxis("axis1")[:,0]
+        fields_paxisY = self.S.Probe("fields","Ex").getAxis("axis2")[:,1]-self.S.namelist.Ltrans/2
+        fields_paxisZ = self.S.Probe("fields","Ex").getAxis("axis3")[:,2]-self.S.namelist.Ltrans/2
         X,Y,Z = np.meshgrid(fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
-        Ex = np.array(self.S.Probe(0,"Ex").getData()).astype(np.float32)
-        Ey = np.array(self.S.Probe(0,"Ey").getData()).astype(np.float32)
-        Ez = np.array(self.S.Probe(0,"Ez").getData()).astype(np.float32)
-        Bx = np.array(self.S.Probe(0,"Bx").getData()).astype(np.float32)
-        By = np.array(self.S.Probe(0,"By").getData()).astype(np.float32)
-        Bz = np.array(self.S.Probe(0,"Bz").getData()).astype(np.float32)
+        Ex = np.array(self.S.Probe("fields","Ex").getData()).astype(np.float32)
+        Ey = np.array(self.S.Probe("fields","Ey").getData()).astype(np.float32)
+        Ez = np.array(self.S.Probe("fields","Ez").getData()).astype(np.float32)
+        Bx = np.array(self.S.Probe("fields","Bx").getData()).astype(np.float32)
+        By = np.array(self.S.Probe("fields","By").getData()).astype(np.float32)
+        Bz = np.array(self.S.Probe("fields","Bz").getData()).astype(np.float32)
 
         AM_data = Y*(Ex*By-Ey*Bx)-Z*(Ez*Bx-Ex*Bz)
         AM_trans_int = integrate.simpson(integrate.simpson(AM_data[:,:,:,:],x=fields_paxisZ,axis=-1),x=fields_paxisY,axis=-1)

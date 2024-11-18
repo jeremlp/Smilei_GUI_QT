@@ -211,7 +211,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.14.2', 'Intensity Compa & sim labels'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.14.7', 'Intensity Compa & sim labels'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -226,7 +226,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu = self.menuBar.addMenu("&Edit")
 
         #Actions
-
         self.actionOpenSim = QtWidgets.QAction("Open Simulation",self)
         self.actionOpenLogs = QtWidgets.QAction("Open Logs",self)
         self.actionOpenIPython = QtWidgets.QAction("Open IPython",self)
@@ -1234,7 +1233,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.compa_intensity_play_time_BUTTON.clicked.connect(lambda: self.onUpdateTabCompaIntensity(1000))
         self.compa_intensity_follow_laser_CHECK.clicked.connect(lambda: self.onUpdateTabCompaIntensity(100))
         self.compa_intensity_spatial_time_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabCompaIntensity(2000))
-        self.compa_intensity_use_vg_CHECK.clicked.connect(lambda: self.onUpdateTabIntensity(5000))
+        self.compa_intensity_use_vg_CHECK.clicked.connect(lambda: self.onUpdateTabCompaIntensity(5000))
 
 
         self.tornado_refresh_BUTTON.clicked.connect(self.call_ThreadDownloadSimJSON)
@@ -1496,10 +1495,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.diag_id = generate_diag_id.get_diag_id(self.sim_directory_path+"/laser_propagation_3d.py")
         self.diag_id_LABEL.setText(f"D{self.diag_id}")
 
-        self.intensity_SI = (self.a0/0.85)**2 *10**18 #W/cm^2
-
-        self.power_SI = self.intensity_SI * pi*(self.w0/l0*10**-4)**2/2
-
         me = 9.1093837*10**-31
         e = 1.60217663*10**-19
         self.c = 299792458
@@ -1517,9 +1512,14 @@ class MainWindow(QtWidgets.QMainWindow):
         KNL3 = K*N*L**3
         self.energy_SI = np.max(self.S.Scalar("Utot").getData())*1000*KNL3
         self.Tp_SI = self.Tp/self.wr*10**15
+        
+        self.intensity_SI = (self.a0/0.85)**2 *10**18 #W/cm^2
+
+        self.power_SI = self.intensity_SI * pi*(self.w0/l0*10**-4)**2/2
+        self.power_SI_from_energy = self.energy_SI/1000/(100*1e-15) #P = E/Tp
 
         self.intensity_SI_LABEL.setText(f"{'%.1E' % decimal.Decimal(str(self.intensity_SI))} W/cm²")
-        self.power_SI_LABEL.setText(f"{self.printSI(self.power_SI,'W',ndeci=2):}")
+        self.power_SI_LABEL.setText(f"{self.printSI(self.power_SI_from_energy,'W',ndeci=2):}")
         self.energy_SI_LABEL.setText(f"{self.energy_SI:.2f} mJ")
         self.Tp_SI_LABEL.setText(f"{self.Tp_SI:.0f} fs")
 
@@ -1584,8 +1584,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
         l0=2*pi
 
-        compa_eps, compa_l1 = self.compa_S.namelist.eps,self.compa_S.namelist.l1
-        compa_w0_txt = f" / <font color='blue'>{self.compa_S.namelist.w0/l0:.1f}𝝀</font>"
+        self.compa_eps, self.compa_l1 = self.compa_S.namelist.eps,self.compa_S.namelist.l1
+        self.compa_w0 = self.compa_S.namelist.w0
+        compa_w0_txt = f" / <font color='blue'>{self.compa_w0/l0:.1f}𝝀</font>"
         compa_a0_txt = f" / <font color='blue'>{self.compa_S.namelist.a0:.2f}</font>"
         compa_Tp_txt = f" / <font color='blue'>{self.compa_S.namelist.Tp/l0:.1f}𝝀/c</font>"
         compa_Pola_txt = f" / <font color='blue'>{self.compa_S.namelist.eps}, {self.compa_S.namelist.l1}</font>"
@@ -1640,6 +1641,9 @@ class MainWindow(QtWidgets.QMainWindow):
         if tab_name=="BINNING":
             self.actionDiagBinning.setChecked(False)
             self.onRemoveBinning()
+        if tab_name=="INTENSITY":
+            self.actionDiagIntensity.setChecked(False)
+            self.onRemoveIntensity()
         if tab_name == "COMPA":
             self.actionDiagCompa.setChecked(False)
             self.onRemoveCompa()
@@ -1816,7 +1820,7 @@ class MainWindow(QtWidgets.QMainWindow):
         fields_t_range = self.compa_S.Probe(0,"Ex").getTimes()
 
         ax.plot(fields_t_range/self.l0, AM_full_int_compa,"--", label="AM", c=f"C{len(ax.get_lines())}")
-        self.writeToFileCompa(self.compa_sim_directory_path,"AM",np.VStack([fields_t_range,AM_full_int_compa]).T)
+        self.writeToFileCompa(self.compa_sim_directory_path,"AM",np.vstack([fields_t_range,AM_full_int_compa]).T)
         ax.legend()
         canvas.draw() 
         ax.relim()            # Recompute the limits
@@ -1836,7 +1840,7 @@ class MainWindow(QtWidgets.QMainWindow):
         figure = canvas.figure
         ax = figure.axes[0]
         ax.plot(fields_t_range/self.l0, AM_full_int,label="AM", ls="-", c=f"C{len(ax.get_lines())}")
-        self.writeToFileCompa(self.sim_directory_path,"AM",np.VStack([fields_t_range,AM_full_int]).T)
+        self.writeToFileCompa(self.sim_directory_path,"AM",np.vstack([fields_t_range,AM_full_int]).T)
 
 
         if is_compa and self.is_compa_sim_loaded:
@@ -2200,12 +2204,14 @@ class MainWindow(QtWidgets.QMainWindow):
             Ex = 0
             if boolList[1]:
                 Ey_diag = self.S.Probe("Exy_intensity","Ey")
+                self.intensity_diag_name_str = "|Ey|^2"
                 Ey = np.array(Ey_diag.getData()).astype(np.float32)
                 intensity_dx = Ey_diag.getAxis("axis1")[:,0][1] - Ey_diag.getAxis("axis1")[:,0][0]
                 any_diag = Ey_diag
 
             if boolList[0]:
                 Ex_diag = self.S.Probe("Exy_intensity","Ex")
+                self.intensity_diag_name_str = "|Ex|^2"
                 Ex = np.array(Ex_diag.getData()).astype(np.float32)
                 intensity_dx = Ex_diag.getAxis("axis1")[:,0][1] - Ex_diag.getAxis("axis1")[:,0][0]
                 any_diag = Ex_diag
@@ -2279,7 +2285,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.circle_max_intensity = plt.Circle((0, 0), self.waist_max_intensity[-1], fill=False, ec="k",ls="--")
             self.ax6_b.add_patch(self.circle_max_intensity)
             
-            self.figure_6.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
             self.figure_6.tight_layout()
             self.canvas_6.draw()
             
@@ -2297,7 +2303,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.intensity_data_time[t] = self.intensity_data[t,xcut_idx,:,self.intensity_trans_mid_idx]
             self.intensity_im_time = self.ax6_time.imshow(self.intensity_data_time.T, cmap="jet",aspect="auto",extent=self.intensity_extentTY)
             self.figure_6_time.colorbar(self.intensity_im_time, ax = self.ax6_time, pad=0.01)
-            self.ax6_time.set_title(f"{self.sim_directory_name} | Intensity <Ey^2> maximum pulse center distribution function of time")
+            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str} | Time evolution of pulse center (use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
             self.ax6_time.set_xlabel("t/t0")
             self.figure_6_time.tight_layout()
             self.canvas_6_time.draw()
@@ -2323,12 +2329,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if boolList[1]:
                 Ey_diag = self.S.Probe("Exy_intensity","Ey")
+                self.intensity_diag_name_str = "|Ey|^2"
                 Ey = np.array(Ey_diag.getData()).astype(np.float32)
                 intensity_dx = Ey_diag.getAxis("axis1")[:,0][1] - Ey_diag.getAxis("axis1")[:,0][0]
                 any_diag = Ey_diag
 
             if boolList[0]:
                 Ex_diag = self.S.Probe("Exy_intensity","Ex")
+                self.intensity_diag_name_str = "|Ex|^2"
                 Ex = np.array(Ex_diag.getData()).astype(np.float32)
                 intensity_dx = Ex_diag.getAxis("axis1")[:,0][1] - Ex_diag.getAxis("axis1")[:,0][0]
                 any_diag = Ex_diag
@@ -2360,7 +2368,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.intensity_im_a.set_clim(vmax=max_intensity)
             self.intensity_im_b.set_clim(vmax=max_intensity)
 
-            self.figure_6.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
             self.figure_6.tight_layout()
             self.canvas_6.draw()
             check_id = 5000 # Update time distribution too
@@ -2399,7 +2407,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.intensity_line_x.set_xdata(self.intensity_paxisX[xcut_idx]/l0)
             self.circle_max_intensity.set_radius(self.waist_max_intensity[xcut_idx]/l0)
 
-            self.figure_6.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
 
             self.canvas_6.draw()
         elif check_id == 1000:
@@ -2426,7 +2434,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.intensity_line_x.set_xdata(self.intensity_paxisX[laser_x_pos_idx]/l0)
                 self.circle_max_intensity.set_radius(self.waist_max_intensity[xcut_idx]/l0)
 
-                self.figure_6.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
+                self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
                 self.canvas_6.draw()
                 time.sleep(0.10)
                 app.processEvents()
@@ -2447,7 +2455,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.intensity_data_time[t] = self.intensity_data[t,xcut_idx,:,self.intensity_trans_mid_idx]
             self.intensity_im_time.set_data(self.intensity_data_time.T)
             self.intensity_im_time.set_clim(vmax=max_intensity_vmax)
-
+            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str} | Time evolution of pulse center (use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
+            self.figure_6_time.tight_layout()
             self.canvas_6_time.draw()
         self.updateInfoLabel()
     
@@ -2470,6 +2479,7 @@ class MainWindow(QtWidgets.QMainWindow):
             Ex, Ex_compa = 0,0
             if boolList[1]:
                 Ey_diag = self.S.Probe("Exy_intensity","Ey")
+                self.compa_intensity_diag_name_str = "|Ey|^2"
                 Ey = np.array(Ey_diag.getData()).astype(np.float32)
                 Ey_diag_compa = self.compa_S.Probe("Exy_intensity","Ey")
                 Ey_compa = np.array(Ey_diag_compa.getData()).astype(np.float32)
@@ -2478,6 +2488,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if boolList[0]:
                 Ex_diag = self.S.Probe("Exy_intensity","Ex")
+                self.compa_intensity_diag_name_str = "|Ex|^2"
                 Ex = np.array(Ex_diag.getData()).astype(np.float32)
                 Ex_diag_compa = self.compa_S.Probe("Exy_intensity","Ex")
                 Ex_compa = np.array(Ex_diag_compa.getData()).astype(np.float32)
@@ -2490,6 +2501,7 @@ class MainWindow(QtWidgets.QMainWindow):
             W = round(average_over/intensity_dx)
                         
             self.intensity_paxisX = any_diag.getAxis("axis1")[W:,0] #remove first W values
+            
             self.intensity_paxisY = any_diag.getAxis("axis2")[:,1]-self.Ltrans/2
             self.intensity_paxisZ = any_diag.getAxis("axis3")[:,2]-self.Ltrans/2
             self.intensity_t_range = any_diag.getTimes()
@@ -2557,19 +2569,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
             zR = 0.5*self.w0**2 #Rayleigh length
             self.waist_max_intensity = self.w0*sqrt(1+(self.intensity_paxisX/zR)**2)*sqrt(abs(self.l1)/2)
+            self.waist_max_intensity_compa = self.compa_w0*sqrt(1+(self.intensity_paxisX/zR)**2)*sqrt(abs(self.compa_l1)/2)
             """
             To convert from intensity to a0: a = np.sqrt(2*I)*np.exp(0.5), for |l| = 1
             """
             self.ax4_intensity_1a.plot(self.intensity_paxisX/l0,self.waist_max_intensity/l0, color="k", ls="--")
             self.ax4_intensity_1a.plot(self.intensity_paxisX/l0,-self.waist_max_intensity/l0, color="k", ls="--")
-            self.ax4_intensity_2a.plot(self.intensity_paxisX/l0,self.waist_max_intensity/l0, color="k", ls="--")
-            self.ax4_intensity_2a.plot(self.intensity_paxisX/l0,-self.waist_max_intensity/l0, color="k", ls="--")
+            self.ax4_intensity_2a.plot(self.intensity_paxisX/l0,self.waist_max_intensity_compa/l0, color="k", ls="--")
+            self.ax4_intensity_2a.plot(self.intensity_paxisX/l0,-self.waist_max_intensity_compa/l0, color="k", ls="--")
             self.circle_max_compa_intensity1 = plt.Circle((0, 0), self.waist_max_intensity[-1], fill=False, ec="k",ls="--")
-            self.circle_max_compa_intensity2 = plt.Circle((0, 0), self.waist_max_intensity[-1], fill=False, ec="k",ls="--")
+            self.circle_max_compa_intensity2 = plt.Circle((0, 0), self.waist_max_intensity_compa[-1], fill=False, ec="k",ls="--")
             self.ax4_intensity_1b.add_patch(self.circle_max_compa_intensity1)
             self.ax4_intensity_2b.add_patch(self.circle_max_compa_intensity2)
 
-            self.figure_4_intensity.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.figure_4_intensity.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} {self.compa_intensity_diag_name_str} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
             self.figure_4_intensity.tight_layout()
             self.canvas_4_intensity.draw()
             
@@ -2598,7 +2611,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.figure_4_intensity_time.colorbar(self.compa_intensity_im_1time, ax = self.ax4_intensity_1time, pad=0.01)
             self.figure_4_intensity_time.colorbar(self.compa_intensity_im_2time, ax = self.ax4_intensity_2time, pad=0.01)
 
-            self.figure_4_intensity_time.suptitle(f"{self.sim_directory_name} | Intensity <Ey^2> maximum pulse center distribution function of time")
+            self.figure_4_intensity_time.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} {self.compa_intensity_diag_name_str} | Time evolution of pulse center (use group velocity: {self.compa_intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
+
             self.ax4_intensity_1time.set_xlabel("t/t0")
             self.ax4_intensity_2time.set_xlabel("t/t0")
             self.figure_4_intensity_time.tight_layout()
@@ -2626,6 +2640,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if boolList[1]:
                 Ey_diag = self.S.Probe("Exy_intensity","Ey")
+                self.compa_intensity_diag_name_str = "|Ey|^2"
                 Ey = np.array(Ey_diag.getData()).astype(np.float32)
                 Ey_diag_compa = self.compa_S.Probe("Exy_intensity","Ey")
                 Ey_compa = np.array(Ey_diag_compa.getData()).astype(np.float32)
@@ -2634,6 +2649,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if boolList[0]:
                 Ex_diag = self.S.Probe("Exy_intensity","Ex")
+                self.compa_intensity_diag_name_str = "|Ex|^2"
                 Ex = np.array(Ex_diag.getData()).astype(np.float32)
                 Ex_diag_compa = self.compa_S.Probe("Exy_intensity","Ex")
                 Ex_compa = np.array(Ex_diag_compa.getData()).astype(np.float32)
@@ -2657,7 +2673,9 @@ class MainWindow(QtWidgets.QMainWindow):
             gc.collect()
             print("load Ex/Ey in RAM:",(t1-t0),"s | ","Compute intensity:",(t2-t1),"s")
             
-            max_intensity_vmax = np.max([self.intensity_data,self.intensity_data_compa])
+            max_intensity_vmax1 = np.max(self.intensity_data)
+            max_intensity_vmax2 = np.max(self.intensity_data_compa)
+
             
             #PLOT INTENSITY
             time_idx = self.compa_intensity_time_SLIDER.sliderPosition()
@@ -2665,15 +2683,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.compa_intensity_im_1a.set_data(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx].T)
             self.compa_intensity_im_1b.set_data(self.intensity_data[time_idx,xcut_idx,:,:])
-            self.compa_intensity_im_1a.set_clim(vmax=max_intensity_vmax)
-            self.compa_intensity_im_1b.set_clim(vmax=max_intensity_vmax)
+            self.compa_intensity_im_1a.set_clim(vmax=max_intensity_vmax1)
+            self.compa_intensity_im_1b.set_clim(vmax=max_intensity_vmax1)
             
             self.compa_intensity_im_2a.set_data(self.intensity_data_compa[time_idx,:,:,self.intensity_trans_mid_idx].T)
             self.compa_intensity_im_2b.set_data(self.intensity_data_compa[time_idx,xcut_idx,:,:])
-            self.compa_intensity_im_2a.set_clim(vmax=max_intensity_vmax)
-            self.compa_intensity_im_2b.set_clim(vmax=max_intensity_vmax)
+            self.compa_intensity_im_2a.set_clim(vmax=max_intensity_vmax2)
+            self.compa_intensity_im_2b.set_clim(vmax=max_intensity_vmax2)
 
-            self.figure_4_intensity.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.figure_4_intensity.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} {self.compa_intensity_diag_name_str} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
             self.figure_4_intensity.tight_layout()
             self.canvas_4_intensity.draw()
             check_id = 5000 #Update time distribution
@@ -2711,9 +2729,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_intensity_line_x1.set_xdata(self.intensity_paxisX[xcut_idx]/l0)
             self.compa_intensity_line_x2.set_xdata(self.intensity_paxisX[xcut_idx]/l0)
             self.circle_max_compa_intensity1.set_radius(self.waist_max_intensity[xcut_idx]/l0)
-            self.circle_max_compa_intensity2.set_radius(self.waist_max_intensity[xcut_idx]/l0)
+            self.circle_max_compa_intensity2.set_radius(self.waist_max_intensity_compa[xcut_idx]/l0)
 
-            self.figure_4_intensity.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.figure_4_intensity.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} {self.compa_intensity_diag_name_str} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
 
             self.canvas_4_intensity.draw()
         elif check_id == 1000:
@@ -2743,16 +2761,18 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.compa_intensity_line_x2.set_xdata(self.intensity_paxisX[laser_x_pos_idx]/l0)
 
                 self.circle_max_compa_intensity1.set_radius(self.waist_max_intensity[xcut_idx]/l0)
-                self.circle_max_compa_intensity2.set_radius(self.waist_max_intensity[xcut_idx]/l0)
+                self.circle_max_compa_intensity2.set_radius(self.waist_max_intensity_compa[xcut_idx]/l0)
 
-                self.figure_4_intensity.suptitle(f"{self.sim_directory_name} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
+                self.figure_4_intensity.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} {self.compa_intensity_diag_name_str} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
                 self.canvas_4_intensity.draw()
                 time.sleep(0.1)
                 app.processEvents()
 
             self.loop_in_process = False
         if check_id == 5000:
-            max_intensity_vmax = np.max([self.intensity_data,self.intensity_data_compa])
+            max_intensity_vmax1 = np.max(self.intensity_data)
+            max_intensity_vmax2 = np.max(self.intensity_data_compa)
+
             empirical_corr = 0.98 # To compensate for other effect on top of dis
             groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) # Formula: vg = c^2k/sqrt(wp^2+c^2k^2)
             laser_x_pos_range = np.max([groupe_velocity*self.intensity_t_range-self.Tp/2,self.intensity_t_range*0],axis=0)          
@@ -2764,15 +2784,17 @@ class MainWindow(QtWidgets.QMainWindow):
             for t,laser_x_pos in enumerate(laser_x_pos_range):
                 xcut_idx = np.where(self.intensity_data[t,:,:,self.intensity_trans_mid_idx]==max_intensity[t])[0][0] #Use maximum intensity
                 xcut_idx_compa = np.where(self.intensity_data_compa[t,:,:,self.intensity_trans_mid_idx]==max_intensity_compa[t])[0][0] #Use maximum intensity
-                if self.intensity_use_vg_CHECK.isChecked(): 
+                if self.compa_intensity_use_vg_CHECK.isChecked(): 
                     xcut_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0] #Use group velocity
                     xcut_idx_compa = xcut_idx
                 self.intensity_data_time[t] = self.intensity_data[t,xcut_idx,:,self.intensity_trans_mid_idx]
                 self.intensity_data_time_compa[t] = self.intensity_data_compa[t,xcut_idx_compa,:,self.intensity_trans_mid_idx]
             self.compa_intensity_im_1time.set_data(self.intensity_data_time.T)
             self.compa_intensity_im_2time.set_data(self.intensity_data_time_compa.T)
-            self.compa_intensity_im_1time.set_clim(vmax=max_intensity_vmax)
-            self.compa_intensity_im_2time.set_clim(vmax=max_intensity_vmax)
+            self.compa_intensity_im_1time.set_clim(vmax=max_intensity_vmax1)
+            self.compa_intensity_im_2time.set_clim(vmax=max_intensity_vmax2)
+            self.figure_4_intensity_time.suptitle(f"{self.sim_directory_name} VS {self.compa_sim_directory_name} {self.compa_intensity_diag_name_str} | Time evolution of pulse center (use group velocity: {self.compa_intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
+            self.figure_4_intensity_time.tight_layout()
             self.canvas_4_intensity_time.draw()
         self.updateInfoLabel()
         
@@ -2803,9 +2825,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plasma_paxisZ, self.plasma_paxisX_Bx, self.plasma_extentXY_long , self.plasma_extentYZ
             gc.collect()
         self.updateInfoLabel()
-
+    
+    def onRemoveIntensity(self):
+        if self.INIT_tabIntensity == False:
+            del self.intensity_data, self.intensity_data_time, self.intensity_im_a,self.intensity_im_b
+            gc.collect()
+        self.updateInfoLabel()
+    
     def onRemoveCompa(self):
-        if not self.INIT_tabPlasma == True and self.INIT_tabPlasma is not None:
+        if self.INIT_tabPlasma == False and self.INIT_tabPlasma is not None:
             del self.compa_plasma_paxisX_long,self.compa_plasma_paxisY_long,self.compa_plasma_t_range,self.compa_plasma_paxisY,
             self.compa_plasma_paxisZ,self.compa_plasma_paxisX_Bx, self.compa_plasma_extentXY_long, self.compa_plasma_extentYZ
             gc.collect()
@@ -2883,10 +2911,22 @@ class MainWindow(QtWidgets.QMainWindow):
             time0 = time.perf_counter()
             mean_coef = 5
             self.track_radial_distrib_im = ax1.scatter(self.r[0]/l0,self.Lx_track[-1],s=1,label="$L_x$")
+            
+            
             ax1.set_xlabel("$r/\lambda$")
             ax1.set_ylabel("$L_x$")
             a_range_r,MLx = self.averageAM(self.r[0], self.Lx_track[-1], 0.5)
             ax1.plot(a_range_r/l0, MLx*mean_coef,"r",label="5<$L_x$>",alpha=0.2)
+            
+            r_range = np.arange(0,2*self.w0,0.1)
+            theta_range = np.arange(0,2*pi,0.01)
+            R_grid, Theta_grid = np.meshgrid(r_range,theta_range)
+            z_foc_lz = np.mean(self.x[0])
+            Tint = 3/8*self.Tp
+            Lx2_model = np.max(self.LxEpolar(R_grid,Theta_grid,z_foc_lz,self.w0,self.a0,Tint),axis=0)
+            ax1.plot(r_range/l0,Lx2_model,"k--",alpha=0.75)
+            ax1.plot(r_range/l0,-Lx2_model,"k--",alpha=0.75, label="Model $L_z^{(2)}$")
+
             ax1.grid()
             ax1.legend()
             # im = ax2.imshow(Lz_interp,extent=extent_interp,cmap="RdYlBu")
@@ -3086,7 +3126,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 if not check.isChecked():
                     check.setEnabled(True)
 
-
         if self.INIT_tabPlasma == None or self.is_sim_loaded == False:
             # Popup().showError("Simulation not loaded")
             return
@@ -3115,9 +3154,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except:
                 self.av_plasma_t_range = self.S.ParticleBinning("weight_av").getTimes()
 
-
-
-            Bx_trans_diag = self.S.Probe(1,"Bx")
+            Bx_trans_diag = self.S.Probe("trans","Bx")
             self.plasma_paxisY = Bx_trans_diag.getAxis("axis2")[:,1]
             self.plasma_paxisZ = Bx_trans_diag.getAxis("axis3")[:,2]
             self.plasma_paxisX_Bx = Bx_trans_diag.getAxis("axis1")[:,0]
@@ -3143,7 +3180,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.updateInfoLabel()
 
         l0 = 2*pi
-        if check_id < 20: #CHECK_BOX UPDATE
+        if check_id < 50: #CHECK_BOX UPDATE
             #=====================================
             # REMOVE ALL FIGURES --> NOT OPTIMAL
             #=====================================
@@ -3304,8 +3341,8 @@ class MainWindow(QtWidgets.QMainWindow):
             vmin, vmax = -0.01, 0.01
         else:
             cmap = "RdYlBu"
-            vmin = -0.05*np.max(np.abs(self.selected_plasma_name))
-            vmax =  0.05*np.max(np.abs(self.selected_plasma_name))
+            vmin = -0.075*np.max(np.abs(self.compa_plasma_data[time_idx]))
+            vmax =  0.075*np.max(np.abs(self.compa_plasma_data[time_idx]))
 
         print("== DRAW IMSHOW FOR COMPA == ")
 
@@ -3350,14 +3387,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.INIT_tabPlasma == None or self.is_sim_loaded == False or self.is_compa_sim_loaded==False:
             # Popup().showError("Simulation not loaded")
             return
-        if check_id < 20:
+        if check_id < 50:
             l0 = 2*pi
-            Bx_long_diag = self.S.Probe(2,"Bx")
+            Bx_long_diag = self.S.Probe("long","Bx")
             self.plasma_paxisX_long = Bx_long_diag.getAxis("axis1")[:,0]
             self.plasma_paxisY_long = Bx_long_diag.getAxis("axis2")[:,1]
             self.plasma_t_range = Bx_long_diag.getTimes()
 
-            Bx_trans_diag = self.S.Probe(1,"Bx")
+            Bx_trans_diag = self.S.Probe("trans","Bx")
             self.plasma_paxisY = Bx_trans_diag.getAxis("axis2")[:,1]
             self.plasma_paxisZ = Bx_trans_diag.getAxis("axis3")[:,2]
             self.plasma_paxisX_Bx = Bx_trans_diag.getAxis("axis1")[:,0]
@@ -3488,6 +3525,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_4_binning.hide()
             self.compa_intensity_groupBox.hide()
             self.canvas_4_intensity.hide()
+            self.canvas_4_intensity_time.hide()
         elif box_idx==1: #plasma
             self.compa_scalar_groupBox.hide()
             self.canvas_4_scalar.hide()
@@ -3497,6 +3535,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_4_binning.hide()
             self.compa_intensity_groupBox.hide()
             self.canvas_4_intensity.hide()
+            self.canvas_4_intensity_time.hide()
         elif box_idx==2: #binning
             self.compa_scalar_groupBox.hide()
             self.canvas_4_scalar.hide()
@@ -3506,6 +3545,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_4_binning.show()
             self.compa_intensity_groupBox.hide()
             self.canvas_4_intensity.hide()
+            self.canvas_4_intensity_time.hide()
         else: #intensity
             self.compa_scalar_groupBox.hide()
             self.canvas_4_scalar.hide()
@@ -3515,6 +3555,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_4_binning.hide()
             self.compa_intensity_groupBox.show()
             self.canvas_4_intensity.show()
+            # self.canvas_4_intensity_time.show()
         return
 
 
@@ -3551,7 +3592,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for diag_name in diag_name_list:
 
                 if diag_name == "weight_r":
-                    diag = self.S.ParticleBinning("weight_av")
+                    diag = self.S.ParticleBinning("2D_weight_av")
                     x_range = np.array(diag.getAxis("x"))
                     y_range = np.array(diag.getAxis("y"))-self.Ltrans/2
                     t_range = diag.getTimes()
@@ -3569,7 +3610,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.binning_t_range = t_range
 
                     if is_compa:
-                        diag2 = self.compa_S.ParticleBinning("weight_av")
+                        diag2 = self.compa_S.ParticleBinning("2D_weight_av")
                         binning_data2 = np.mean(np.array(diag2.getData()),axis=-1)
                         x_range2 = np.array(diag2.getAxis("x"))
                         idx_x2 = round(len(x_range2)*0.25)
@@ -3620,11 +3661,11 @@ class MainWindow(QtWidgets.QMainWindow):
                         ax.set_xlabel("Ekin")
                         if is_compa: binning_image2, = ax.plot(x_range,binning_data2[time_idx], label=diag_name+"_compa")
 
-                    elif diag_name=="Lx_x" or diag_name=="Lx_x_av" or diag_name=="Lx_r":
+                    elif diag_name=="Lx_x" or diag_name=="Lx_x_av" or diag_name=="Lx_r" or diag_name=="Lx_r_ion":
                         ax.set_xlabel("$x/\lambda$")
                         ax.set_ylabel("$L_x$")
 
-                        if diag_name=="Lx_r":
+                        if diag_name=="Lx_r" or diag_name=="Lx_r_ion":
                             x_range = diag.getAxis("user_function0")
                             idx = round(0.3*binning_data.shape[0]) #Average over 30 - 70% of the range to remove transiant effects
                             ax.set_xlabel("$r/\lambda$")
@@ -4141,7 +4182,15 @@ class MainWindow(QtWidgets.QMainWindow):
         d=(decimal.Decimal(str(x))*shift).normalize()
         m,e=d.to_eng_string().split('E')
         return m[:4] + " " + prefix[int(e)//3] + baseunit
-
+    
+    def LxEpolar(self,r,Theta,z,w0,a0,Tint):
+        expr = -(1 / (2 * (w0**4 + 4 * z**2)**5)) * exp(-((2 * r**2 * w0**2) / (w0**4 + 4 * z**2))) * a0**2 * Tint * w0**6 * (
+            -8 * r**2 * z * (4 * r**4 - 12 * w0**6 + w0**8 - 48 * w0**2 * z**2 + 
+            4 * r**2 * (-4 * w0**2 + w0**4 - 4 * z**2) + 8 * w0**4 * (3 + z**2) + 16 * z**2 * (6 + z**2)) * cos(2 * Theta) - 
+            4 * r**2 * (4 * r**6 + 10 * w0**8 - w0**10 + 32 * w0**4 * z**2 - 32 * z**4 + 
+            4 * r**4 * (-7 * w0**2 + w0**4 - 4 * z**2) - 8 * w0**6 * (3 + z**2) - 16 * w0**2 * z**2 * (6 + z**2) + 
+            r**2 * (-16 * w0**6 + w0**8 - 32 * w0**2 * z**2 + 8 * w0**4 * (7 + z**2) + 16 * z**2 * (10 + z**2))) * sin(2 * Theta))
+        return expr
 
 class ProxyStyle(QtWidgets.QProxyStyle):
     """Overwrite the QSlider: left click place the cursor at cursor position"""

@@ -136,7 +136,10 @@ class RemoteClient:
             stdin, stdout, stderr = self.connection.exec_command(cmd)
             stdout.channel.recv_exit_status()
             response = stdout.readlines()
-            error = stderr.readlines()
+            # error = stderr.readlines()
+            # print("SSH IN:",stdin.readlines())
+            # print("SSH ERROR:",stderr.readlines())
+            # print("SSH OUT:",stdout.readlines())
             if len(stderr.readlines())>0:
                 print("SSH ERROR:",stderr.readlines())
             for line in response:

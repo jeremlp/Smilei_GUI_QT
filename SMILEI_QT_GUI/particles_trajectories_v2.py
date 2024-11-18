@@ -59,7 +59,6 @@ if track_name == "track_eon":
     
     E_theta = (y*Ez - z*Ey)/r
 
-r = np.sqrt(y**2 + z**2)
 Lx_track =  y*pz - z*py
 
 plt.figure()
