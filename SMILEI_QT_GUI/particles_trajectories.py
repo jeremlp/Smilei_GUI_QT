@@ -13,7 +13,7 @@ import sys
 module_dir_happi = 'C:/Users/jerem/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
-S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_w3_Tp12_SAM_Long')
+S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_SAM_Long')
 l0 = 2*np.pi
 
 T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px"])

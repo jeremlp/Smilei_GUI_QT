@@ -23,6 +23,7 @@ from numpy import sqrt, cos, sin, exp, pi
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+import matplotlib
 import matplotlib.pyplot as plt
 import time
 import gc
@@ -30,6 +31,7 @@ import psutil
 from scipy.interpolate import griddata
 from scipy import integrate
 import scipy
+import math
 
 import ctypes
 
@@ -211,7 +213,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.14.7', 'Intensity Compa & sim labels'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.14.10', 'Intensity Compa & sim labels'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -576,6 +578,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.canvas_2 = FigureCanvas(self.figure_2)
         self.plt_toolbar_2 = NavigationToolbar(self.canvas_2, self)
         self.plt_toolbar_2.setFixedHeight(self.toolBar_height)
+        
+        self.figure_2_displace = Figure()
+        self.canvas_2_displace = FigureCanvas(self.figure_2_displace)
+        self.plt_toolbar_2_displace = NavigationToolbar(self.canvas_2_displace, self)
+        self.plt_toolbar_2_displace.setFixedHeight(self.toolBar_height)
+        self.canvas_2_displace.hide()
+        self.plt_toolbar_2_displace.hide()
+        
 
         self.track_file_BOX = QtWidgets.QComboBox()
         self.track_file_BOX.addItem("track_eon")
@@ -588,12 +598,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_Npart_EDIT.setMaximumWidth(45)
 
         self.track_update_offset_CHECK = QtWidgets.QCheckBox("Update offsets")
+        
+        self.track_pannel_BOX = QtWidgets.QComboBox()
+        self.track_pannel_BOX.addItem("Angular Momentum")
+        self.track_pannel_BOX.addItem("Displacements")
+        # self.track_pannel_BOX.addItem("particle trajectories")
 
         layoutNpart = self.creatPara("Npart=", self.track_Npart_EDIT,adjust_label=True)
 
         layoutTabSettingsTrackFile.addLayout(layoutNpart)
         layoutTabSettingsTrackFile.addWidget(self.track_file_BOX)
         layoutTabSettingsTrackFile.addWidget(self.track_update_offset_CHECK)
+        layoutTabSettingsTrackFile.addWidget(self.track_pannel_BOX)
 
         layoutTabSettings = QtWidgets.QVBoxLayout()
         layoutTabSettings.addLayout(layoutTabSettingsTrackFile)
@@ -610,6 +626,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTimeSlider.addWidget(self.track_play_time_BUTTON)
         layoutTabSettings.addLayout(layoutTimeSlider)
         layoutTabSettings.addWidget(self.plt_toolbar_2)
+        layoutTabSettings.addWidget(self.plt_toolbar_2_displace)
 
         self.track_groupBox = QtWidgets.QGroupBox("Track Particles Diagnostic")
         self.track_groupBox.setFixedHeight(150)
@@ -618,6 +635,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.layoutTrack = QtWidgets.QVBoxLayout()
         self.layoutTrack.addWidget(self.track_groupBox)
         self.layoutTrack.addWidget(self.canvas_2)
+        self.layoutTrack.addWidget(self.canvas_2_displace)
 
         self.track_Widget = QtWidgets.QWidget()
         self.track_Widget.setLayout(self.layoutTrack)
@@ -1168,6 +1186,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_file_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabTrack(-1))
         self.track_Npart_EDIT.returnPressed.connect(lambda:  self.onUpdateTabTrack(-1))
         self.track_update_offset_CHECK.clicked.connect(lambda:  self.onUpdateTabTrack(-1))
+        self.track_pannel_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabTrack(5000))
+
 
         for i in range(len(self.plasma_check_list)):
             self.plasma_check_list[i].clicked.connect(partial(self.onUpdateTabPlasma,i))
@@ -2888,7 +2908,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pz = self.track_traj["pz"][:,::N_part]
             self.px = self.track_traj["px"][:,::N_part]
             self.r = np.sqrt(self.y**2 + self.z**2)
+            self.pr = (self.y*self.py + self.z*self.pz)/self.r
+
             self.Lx_track =  self.y*self.pz - self.z*self.py
+            self.theta = np.arctan2(self.z,self.y)
+            self.gamma = np.sqrt(1+self.px**2+self.py**2+self.pz**2)
+
 
             byte_size_track = getsizeof(self.Lx_track) + getsizeof(self.r)
             + getsizeof(self.x)+getsizeof(self.y) + getsizeof(self.z)
@@ -2906,12 +2931,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if check_id <= 0:
             if len(self.figure_2.axes) !=0:
                 for ax in self.figure_2.axes: ax.remove()
+                for ax in self.figure_2_displace.axes: ax.remove()
 
             ax1,ax2 = self.figure_2.subplots(1,2)
             time0 = time.perf_counter()
             mean_coef = 5
             self.track_radial_distrib_im = ax1.scatter(self.r[0]/l0,self.Lx_track[-1],s=1,label="$L_x$")
-            
             
             ax1.set_xlabel("$r/\lambda$")
             ax1.set_ylabel("$L_x$")
@@ -2929,14 +2954,37 @@ class MainWindow(QtWidgets.QMainWindow):
 
             ax1.grid()
             ax1.legend()
-            # im = ax2.imshow(Lz_interp,extent=extent_interp,cmap="RdYlBu")
             vmax = 1.25*np.nanstd(self.Lx_track[-1])
-            # ax2.scatter(self.y[0],self.z[0],s=1)
+
             self.track_trans_distrib_im = ax2.scatter(self.y[0]/l0,self.z[0]/l0,s=1, c=self.Lx_track[-1], vmin=-vmax,vmax=vmax, cmap="RdYlBu")
             self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
-            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)",**self.qss_plt_title)
+            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
             self.figure_2.tight_layout()
             self.canvas_2.draw()
+            
+            self.ax1_displace,self.ax2_displace,self.ax3_displace,self.ax4_displace = self.figure_2_displace.subplots(2,2).ravel()
+            self.ax1_displace.set_title("x-x0")
+            self.ax2_displace.set_title("r-r0")
+            self.ax3_displace.set_title("theta-theta0")
+            self.ax4_displace.set_title("pr")
+            self.ax1_displace.grid()
+            self.ax2_displace.grid()
+            self.ax3_displace.grid()
+            self.ax4_displace.grid()
+            self.track_displace_x = self.ax1_displace.scatter(self.r[0]/l0,(self.x[-1]-self.x[0])/l0,s=1)
+            self.track_displace_r = self.ax2_displace.scatter(self.r[0]/l0,(self.r[-1]-self.r[0])/l0,s=1)
+            self.track_displace_theta = self.ax3_displace.scatter(self.r[0]/l0,(self.theta[-1]-self.theta[0]),s=1)
+            self.track_displace_pr = self.ax4_displace.scatter(self.r[0]/l0,self.pr[-1],s=1)
+            self.track_displace_pr_model, = self.ax4_displace.plot(r_range/l0, -self.a0**2/4*self.f_squared_prime(r_range,0)*3/8*self.Tp,"r-")
+            self.track_displace_r_model, = self.ax2_displace.plot(r_range/l0, np.abs(-self.a0**2/4*self.f_squared_prime(r_range,0)*(3/8*self.Tp)**2/2),"r-")
+
+            
+            # self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
+            self.figure_2_displace.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+            self.figure_2_displace.tight_layout()
+            self.canvas_2_displace.draw()
+
+            
             time1 = time.perf_counter()
             print("draw:",(time1-time0)*1000,"ms")
 
@@ -2956,7 +3004,21 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.track_radial_distrib_im.set_offsets(np.c_[self.r[time_idx]/l0,self.Lx_track[time_idx]])
             else:
                 self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
-            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)",**self.qss_plt_title)
+            
+            combo_box_index = self.track_pannel_BOX.currentIndex()
+            if combo_box_index==1:
+                r_range = np.arange(0,2*self.w0,0.1)
+
+                self.track_displace_x.set_offsets(np.c_[self.r[0]/l0,(self.x[time_idx]-self.x[0])/l0])
+                self.track_displace_r.set_offsets(np.c_[self.r[0]/l0,(self.r[time_idx]-self.r[0])/l0])
+                self.track_displace_theta.set_offsets(np.c_[self.r[0]/l0,(self.theta[time_idx]-self.theta[0])])
+                self.track_displace_pr.set_offsets(np.c_[self.r[0]/l0,self.pr[time_idx]])
+                self.track_displace_pr_model.set_ydata(-self.a0**2/4*self.f_squared_prime(r_range,0)*3/8*self.Tp)
+                self.track_displace_r_model.set_ydata(np.abs(-self.a0**2/4*self.f_squared_prime(r_range,0)*(self.track_t_range[time_idx])**2/2))
+                self.figure_2_displace.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+                self.canvas_2_displace.draw()
+                
+            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
             self.canvas_2.draw()
 
         elif check_id == 1000: #PLAY ANIMATION
@@ -2976,14 +3038,29 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
 
-                self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[time_idx]/self.l0:.2f}~t_0$ (N={self.track_N/1000:.2f}k)",**self.qss_plt_title)
+                self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
                 self.canvas_2.draw()
                 time.sleep(anim_speed)
                 app.processEvents()
             self.loop_in_process = False
+        
+        elif check_id == 5000:
+            combo_box_index = self.track_pannel_BOX.currentIndex()
+            if combo_box_index==1:
+                self.canvas_2.hide()
+                self.plt_toolbar_2.hide()
+                self.canvas_2_displace.show()
+                self.plt_toolbar_2_displace.show()
+            else:
+                self.canvas_2.show()
+                self.plt_toolbar_2.show()
+                self.canvas_2_displace.hide()
+                self.plt_toolbar_2_displace.hide()
+            self.figure_2.tight_layout()
+            self.figure_2_displace.tight_layout()
         self.updateInfoLabel()
-
-
+        return
+    
     def averageAM(self, X,Y,dr_av):
         M = []
         da = 0.04
@@ -3885,11 +3962,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 print("running sim loop:",n,old_sim_id_int)
                 if str(old_sim_id_int) not in list(self.sim_dict): #this simulation has finished
                     print(old_sim_id_int,"not in", list(self.sim_dict))
-                    finished_sim_path = self.previous_sim_dict[str(old_sim_id_int)]["job_full_path"]
-                    finished_sim_name = self.previous_sim_dict[str(old_sim_id_int)]["job_full_name"]
-                    print(finished_sim_path,"download is available ! \a") #\a
-                    utils.Popup().showToast('Tornado download is available', finished_sim_name)
-
+                    try:
+                        finished_sim_path = self.previous_sim_dict[str(old_sim_id_int)]["job_full_path"]
+                        finished_sim_name = self.previous_sim_dict[str(old_sim_id_int)]["job_full_name"]
+                        print(finished_sim_path,"download is available ! \a") #\a
+                        utils.Popup().showToast('Tornado download is available', finished_sim_name)
+                    except KeyError:
+                        print("/!\ KeyError",old_sim_id_int)
                     self.finished_sim_hist.append(old_sim_id_int)
                     self.running_sim_hist.remove(old_sim_id_int)
                     self.can_download_sim_dict[int(old_sim_id_int)] = finished_sim_path
@@ -3926,6 +4005,8 @@ class MainWindow(QtWidgets.QMainWindow):
             sim_id_int = int(sim_id)
             sim_progress = sim["progress"]*100
             sim_ETA = sim["ETA"].rjust(5)
+            sim_expected_time = sim["expected_time"].rjust(5)
+
             sim_name = sim["job_full_name"][:-3]
             sim_nodes = int(sim["NODES"])
             sim_push_time = sim["push_time"]
@@ -3933,7 +4014,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if (sim_id_int not in self.running_sim_hist) and (sim_id_int not in self.finished_sim_hist):
 
-                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time, diag_id)
+                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA,sim_expected_time, sim_push_time, diag_id)
                 self.layout_progress_bar_dict[sim_id] = layoutProgressBar
 
                 item_count = self.layoutTornado.count()
@@ -3950,11 +4031,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 progress_bar = self.layout_progress_bar_dict[sim_id].itemAt(2).widget()
                 progress_bar.setValue(round(sim_progress))
                 ETA_label = self.layout_progress_bar_dict[sim_id].itemAt(3).widget()
-                ETA_label.setText(sim_ETA)
+                ETA_label.setText(f"<b>{sim_ETA}</b><br>{sim_expected_time}")
                 push_time_label = self.layout_progress_bar_dict[sim_id].itemAt(4).widget()
-                if sim_push_time > 10_000:
+                push_time_str_SI = str(sim_push_time)+"ns"
+                if sim_push_time >= 10_000:
+                    push_time_str_SI = f"{self.printSI(sim_push_time*10**-9,'s',ndeci=2):}"
                     push_time_label.setStyleSheet("color: red")
-                push_time_label.setText(str(sim_push_time)+"ns")
+                push_time_label.setText(push_time_str_SI)
 
         #Update label with Update datetime
         sim_datetime = self.sim_dict["datetime"]
@@ -4075,6 +4158,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 sim = self.sim_dict[sim_id]
                 sim_progress = sim["progress"]*100
                 sim_ETA = sim["ETA"].rjust(5)
+                sim_expected_time = sim["expected_time"].rjust(5)
+
                 sim_name = sim["job_full_name"][:-3]
                 sim_nodes = int(sim["NODES"])
                 sim_push_time = sim["push_time"]
@@ -4082,7 +4167,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
                 self.running_sim_hist.append(int(sim_id))
 
-                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time, diag_id)
+                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_expected_time, sim_push_time, diag_id)
 
                 self.layout_progress_bar_dict[sim_id] = layoutProgressBar
                 self.layoutTornado.addLayout(layoutProgressBar)
@@ -4096,7 +4181,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.call_ThreadDownloadSimJSON()
             app.processEvents()
 
-    def createLayoutProgressBar(self, sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_push_time, diag_id):
+    def createLayoutProgressBar(self, sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_expected_time, sim_push_time, diag_id):
         layoutProgressBar = QtWidgets.QHBoxLayout()
 
         tornado_PROGRESS_BAR = QtWidgets.QProgressBar(maximum=100)
@@ -4105,33 +4190,37 @@ class MainWindow(QtWidgets.QMainWindow):
         tornado_PROGRESS_BAR.setAlignment(QtCore.Qt.AlignCenter)
 
         custom_bold_FONT = QtGui.QFont("Courier New", 14,QFont.Bold)
-        custom_FONT = QtGui.QFont("Courier New", 12)
+        custom_FONT = QtGui.QFont("Courier New", 14)
+        custom_small_FONT = QtGui.QFont("Courier New", 12)
 
         sim_name_LABEL = QtWidgets.QLabel(f"[{sim_id}] {sim_name}")
         sim_name_LABEL.setFont(custom_bold_FONT)
-        sim_name_LABEL.setMinimumWidth(475) #450 FOR LAPTOP
+        sim_name_LABEL.setMinimumWidth(420) #450 FOR LAPTOP
         sim_name_LABEL.setStyleSheet("background-color: lightblue")
         sim_name_LABEL.setWordWrap(True)
-        sim_name_LABEL.setAlignment(QtCore.Qt.AlignCenter)
+        # sim_name_LABEL.setAlignment(QtCore.Qt.AlignCenter)
 
         sim_node_LABEL = QtWidgets.QLabel(f"NDS:{sim_nodes}")
         sim_node_LABEL.setFont(custom_bold_FONT)
         sim_node_LABEL.setStyleSheet("background-color: lightblue")
 
-        ETA_LABEL = QtWidgets.QLabel(sim_ETA)
-        ETA_LABEL.setFont(custom_bold_FONT)
+        ETA_LABEL = QtWidgets.QLabel(f"<b>{sim_ETA}</b><br>{sim_expected_time}")
+        ETA_LABEL.setFont(custom_FONT)
         ETA_LABEL.setStyleSheet("background-color: lightblue")
         # ETA_LABEL.setAlignment(QtCore.Qt.AlignCenter)
         ETA_LABEL.setMinimumWidth(75)
 
-        push_time_LABEL = QtWidgets.QLabel(str(sim_push_time)+"ns")
-        if sim_push_time > 10_000:
+        push_time_str_SI = str(sim_push_time)+"ns"
+        push_time_LABEL = QtWidgets.QLabel(push_time_str_SI)
+        if sim_push_time >= 10_000:
+            push_time_str_SI = f"{self.printSI(sim_push_time*10**-9,'s',ndeci=2):}"
             push_time_LABEL.setStyleSheet("color: red")
-        push_time_LABEL.setFont(custom_FONT)
+        push_time_LABEL.setText(push_time_str_SI)
+        push_time_LABEL.setFont(custom_small_FONT)
         push_time_LABEL.setMinimumWidth(75)
 
         diag_id_LABEL = QtWidgets.QLabel("D"+str(diag_id))
-        diag_id_LABEL.setFont(custom_FONT)
+        diag_id_LABEL.setFont(custom_small_FONT)
         diag_id_LABEL.setMinimumWidth(65)
 
         dl_sim_BUTTON = QtWidgets.QPushButton()
@@ -4191,7 +4280,17 @@ class MainWindow(QtWidgets.QMainWindow):
             4 * r**4 * (-7 * w0**2 + w0**4 - 4 * z**2) - 8 * w0**6 * (3 + z**2) - 16 * w0**2 * z**2 * (6 + z**2) + 
             r**2 * (-16 * w0**6 + w0**8 - 32 * w0**2 * z**2 + 8 * w0**4 * (7 + z**2) + 16 * z**2 * (10 + z**2))) * sin(2 * Theta))
         return expr
-
+    
+    def w(self,z):
+        zR = 0.5*self.w0**2
+        return self.w0*np.sqrt(1+(z/zR)**2)
+    def f(self,r,z):
+        return (r*sqrt(2)/self.w(z))**abs(self.l1)*np.exp(-(r/self.w(z))**2)
+    def f_prime(self,r,z):
+        C_lp = np.sqrt(1/math.factorial(abs(self.l1)))
+        return C_lp/self.w(z)**3 * exp(-(r/self.w(z))**2) * (r/self.w(z))**(abs(self.l1)-1) * (-2*r**2+self.w(z)**2*abs(self.l1))
+    def f_squared_prime(self,r,z):
+        return 2*self.w0**2/(self.w(z)**2*r) * self.f(r,z)**2*(abs(self.l1)-2*(r/self.w0)**2+ 4*(z**2/self.w0**4))
 class ProxyStyle(QtWidgets.QProxyStyle):
     """Overwrite the QSlider: left click place the cursor at cursor position"""
     def styleHint(self, hint, opt=None, widget=None, returnData=None):

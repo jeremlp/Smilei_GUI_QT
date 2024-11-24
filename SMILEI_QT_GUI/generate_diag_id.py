@@ -8,11 +8,13 @@ Created on Sat Oct 26 10:35:27 2024
 import hashlib
 
 def generate_diag_id(file, insert_id=False):
+    print("generate_diag_id:",file)
+
     with open(file) as f:
         lines = f.readlines()
     cond=0
     diag_id_idx = None
-
+    diag_idx = None
     for i,l in enumerate(lines):
         if "DIAG_ID:" in l:
             diag_id_idx = i
@@ -21,6 +23,8 @@ def generate_diag_id(file, insert_id=False):
             if cond ==2:
                 diag_idx = i
                 break
+    if diag_idx is None: #Log has not been loaded
+        return -1, -1
     diag_txt = '\n'.join(lines[diag_idx:])
     import hashlib
     hashing_func = hashlib.md5

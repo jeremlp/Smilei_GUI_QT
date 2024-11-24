@@ -4,6 +4,9 @@ Created on Thu Oct 24 18:14:12 2024
 
 @author: jerem
 """
+
+
+
 import numpy as np
 from numpy import exp, cos, sin, sqrt, pi
 import matplotlib.pyplot as plt
@@ -13,7 +16,7 @@ import sys
 module_dir_happi = 'C:/Users/jerem/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
-S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/')
+S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_PHYSICAL/sim_SAM_Long')
 l0=2*np.pi
 
 plt.close("all")
@@ -64,9 +67,10 @@ plt.grid()
 plt.xlabel("$r/\lambda$")
 plt.title(f"Normalized quantities, from Berezhiani (1997)\na0={a0}, w0={w0/l0:.1f}$\lambda$, $\epsilon$={eps}, l={l}")
 
-weight_diag = S.ParticleBinning("weight_av")
-weight = np.mean(np.array(weight_diag.getData())[-1,:,:]/0.03,axis=-1)
-weight_av = np.mean(weight, axis=0)
+weight_diag = S.ParticleBinning("2D_weight_av")
+weight = np.mean(np.array(weight_diag.getData())[:,:,:]/0.03,axis=-1)
+W_smilei = weight[8,240]
+# weight_av = np.mean(weight, axis=0)
 y_range_w = (weight_diag.getAxis("y")-S.namelist.Ltrans/2)/l0
 
 Bx_av_long_diag = S.Field("Bx_av","Bx_m")
@@ -77,9 +81,12 @@ mean_Bx =np.mean(Bx[-1],axis=0)
 
 Bx1 = mean_Bx[y_range<=0]
 Bx2 = mean_Bx[y_range>=0]
-
-w1 = weight_av[y_range_w<=1e-5]
-w2 = weight_av[y_range_w>=0]
+from scipy.signal import lfilter
+r_smilei = np.abs(y_range_w[y_range_w>=0])
+w1 = W_smilei[y_range_w<2.7e-05]
+w2 = W_smilei[y_range_w>0]
+print(w1.shape,w2.shape)
+w_mean = np.mean([w1[::-1],w2],axis=0)
 
 # plt.figure()
 # plt.plot(np.abs(y_range_w[y_range_w<=1e-5]),w1)

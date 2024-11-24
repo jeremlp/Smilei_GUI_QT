@@ -94,7 +94,7 @@ S.ParticleBinning("px_scalar").plot
 
 
 plt.figure()
-Bpx_long = S.ParticleBinning("2D_px")
+Bpx_long = S.ParticleBinning("2D_ptheta_W")
 px = np.mean(np.array(Bpx_long.getData()),axis=-1)
 plt.imshow(px[t_idx,:,:].T, cmap="RdYlBu", aspect="auto",vmin=-10, vmax=10)
 plt.colorbar()

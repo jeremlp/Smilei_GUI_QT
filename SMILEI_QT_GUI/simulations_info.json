@@ -1,13 +1,58 @@
 {
-    "50579": {
-        "job_id": "50579",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_NR/opt_w2.5_Tp6_a0.1_z2",
-        "job_full_name": "opt_w2.5_Tp6_a0.1_z2.sh",
-        "NODES": "5",
-        "progress": 0.09443593670239918,
-        "ETA": "2h32",
-        "push_time": 407346,
+    "50644": {
+        "job_id": "50644",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_A2_HD/opt_a2.0_dx48_w4",
+        "job_full_name": "opt_a2.0_dx48_w4.sh",
+        "NODES": "2",
+        "progress": 0.8070279928528886,
+        "ETA": "4h54",
+        "expected_time": "22h21",
+        "push_time": 2577418,
         "diag_id": 37656
     },
-    "datetime": "18/11 - 10h15"
+    "50650": {
+        "job_id": "50650",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_PML_A0.1/opt_base_PML_2_20_20_dx48",
+        "job_full_name": "opt_base_PML_2_20_20_dx48.sh",
+        "NODES": "2",
+        "progress": 0.4973198332340679,
+        "ETA": "5h31",
+        "expected_time": "22h58",
+        "push_time": 747812,
+        "diag_id": 37656
+    },
+    "50651": {
+        "job_id": "50651",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_PML_A0.1/opt_base_PML_50_20_20_dx48",
+        "job_full_name": "opt_base_PML_50_20_20_dx48.sh",
+        "NODES": "2",
+        "progress": 0.467540202501489,
+        "ETA": "5h58",
+        "expected_time": "23h25",
+        "push_time": 761468,
+        "diag_id": 37656
+    },
+    "50652": {
+        "job_id": "50652",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_PML_A0.1/opt_base_PML_20_50_50_dx48",
+        "job_full_name": "opt_base_PML_20_50_50_dx48.sh",
+        "NODES": "2",
+        "progress": 0.4734961286480048,
+        "ETA": "5h52",
+        "expected_time": "23h19",
+        "push_time": 757662,
+        "diag_id": 37656
+    },
+    "50654": {
+        "job_id": "50654",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_A0.3_HD/opt_a0.3_dx48",
+        "job_full_name": "opt_a0.3_dx48.sh",
+        "NODES": "2",
+        "progress": 0.3186420488385944,
+        "ETA": "7h30",
+        "expected_time": "0h57",
+        "push_time": 1117370,
+        "diag_id": 37656
+    },
+    "datetime": "22/11 - 17h27"
 }

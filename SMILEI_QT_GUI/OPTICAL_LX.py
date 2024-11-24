@@ -5,16 +5,18 @@ Created on Fri Nov 15 10:50:18 2024
 @author: jerem
 """
 
+
 import os
 import sys
 import numpy as np
-from numpy import exp, sin, cos, arctan2, pi, sqrt
 import matplotlib.pyplot as plt
 module_dir_happi = 'C:/Users/jerem/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
-S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_OPTICAL/opt_OAM_w6_a0.1')
+S = happi.Open('C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/SIM_OPTICAL_A2_HD/opt_a2.0_dx48')
 l0=2*np.pi
+from numpy import exp, sin, cos, arctan2, pi, sqrt
+
 
 w0 = S.namelist.w0
 Tp = S.namelist.Tp
@@ -65,9 +67,9 @@ sidx = x[0]<13*l0
 midx = (x[0]<23*l0) & (x[0]>17*l0)
 eidx = x[0]>27*l0
 
-plt.scatter(r[0,sidx]/l0,Lx_track[-1,sidx],s=1,alpha=0.5)
-plt.scatter(r[0,midx]/l0,Lx_track[-1,midx],s=1,alpha=0.5)
-plt.scatter(r[0,eidx]/l0,Lx_track[-1,eidx],s=1,alpha=0.5)
+plt.scatter(r[0,sidx]/l0,Lx_track[-1,sidx],s=1,alpha=0.5,label="close")
+# plt.scatter(r[0,midx]/l0,Lx_track[-1,midx],s=1,alpha=0.5,label="mid")
+# plt.scatter(r[0,eidx]/l0,Lx_track[-1,eidx],s=1,alpha=0.5,label="far")
 
 # plt.colorbar()
 plt.grid()
@@ -75,9 +77,28 @@ plt.grid()
 r_range = np.arange(0,2*w0,0.1)
 theta_range = np.arange(0,2*pi,0.01)
 R_grid, Theta_grid = np.meshgrid(r_range,theta_range)
-z_foc_lz = 0*l0
+z_foc_lz = 5*l0
 Tint = 3/8*Tp
 Lx2_model = np.max(LxEpolar(R_grid,Theta_grid,z_foc_lz,w0,a0,Tint),axis=0)
-plt.plot(r_range/l0,Lx2_model,"k--",alpha=0.75)
-plt.plot(r_range/l0,-Lx2_model,"k--",alpha=0.75, label="Model $L_z^{(2)}$")
+plt.plot(r_range/l0,Lx2_model,"k--",alpha=1)
+plt.plot(r_range/l0,-Lx2_model,"k--",alpha=1, label="Model $L_z^{(2)}$")
 plt.legend()
+
+
+"""
+CHECK EFFECTIVE PULSE DURATION
+
+Ex = track_traj["Ex"]
+Ey = track_traj["Ey"]
+
+plt.figure()
+plt.plot(t_range/l0-5,np.max(np.abs(Ey),axis=-1))
+plt.grid()
+
+Ey_pulse = np.max(np.abs(Ey),axis=-1)
+dt_diag = (t_range[1]-t_range[0])/l0
+Tp_eff1 = np.max(np.diff(np.where(Ey_pulse<0.01*np.max(Ey_pulse))[0]))*dt_diag
+Tp_eff2 = 2*(t_range[np.where(Ey_pulse==np.max(Ey_pulse))[0][0]]/l0-5)
+print(Tp_eff1,Tp_eff2)
+
+"""

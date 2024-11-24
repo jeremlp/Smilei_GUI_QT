@@ -48,7 +48,7 @@ def getSimRunTime(sim_path):
             text = f.readlines()
             for i, line in enumerate(text):
                 if "push time [ns]" in line:
-                    pt = int(np.mean([int(text[i+n].split()[-1]) for n in range(1,40)]))
+                    pt = int(np.mean([int(text[i+n].split()[-1]) for n in range(1,20)]))
                     # print("-----------------")
                 if "Time_in_time_loop" in line:
                     run_time = float(line.split()[1])
