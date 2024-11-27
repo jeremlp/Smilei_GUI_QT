@@ -7,7 +7,7 @@ Created on Fri Sep  6 18:54:10 2024
 import sys
 from sys import getsizeof
 import os
-module_dir_happi = 'C:/Users/jerem/Smilei'
+module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
 
@@ -31,6 +31,8 @@ import psutil
 from scipy.interpolate import griddata
 from scipy import integrate
 import scipy
+from scipy import special
+
 import math
 
 import ctypes
@@ -67,6 +69,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         window_height = int(size.height()/1.3333)
         window_width = int(size.width()/1.3333)
+        
+        self.resolution_scaling = 1.0
+        self.toolBar_height = 40 #45 for Tower
+
 
         self.thread = QThreadPool()
 
@@ -213,7 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.14.10', 'Intensity Compa & sim labels'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.0', 'NFF & Nuter'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -396,10 +402,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         boxLayout_sim_info.addWidget(QtWidgets.QLabel("-"*25))
 
-        SI_assume_LABEL= QtWidgets.QLabel("SI UNITS (𝝀 = 1 µm)")
-        SI_assume_LABEL.setFont(self.small_bold_FONT)
-        SI_assume_LABEL.setAlignment(QtCore.Qt.AlignCenter)
-        boxLayout_sim_info.addWidget(SI_assume_LABEL)
+        self.SI_assume_LABEL= QtWidgets.QLabel("SI UNITS (𝝀 = 1 µm)")
+        self.SI_assume_LABEL.setFont(self.small_bold_FONT)
+        self.SI_assume_LABEL.setAlignment(QtCore.Qt.AlignCenter)
+        boxLayout_sim_info.addWidget(self.SI_assume_LABEL)
 
         self.Tp_SI_LABEL= QtWidgets.QLabel("")
         self.Tp_SI_LABEL.setFont(self.medium_FONT)
@@ -441,7 +447,6 @@ class MainWindow(QtWidgets.QMainWindow):
         #=====================================================================
         # TAB WIDGET
         #=====================================================================
-        self.toolBar_height = 50 #45 for Tower
         #---------------------------------------------------------------------
         # TAB 0
         #---------------------------------------------------------------------
@@ -473,7 +478,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         self.scalar_groupBox = QtWidgets.QGroupBox("Scalar Diagnostics")
-        self.scalar_groupBox.setFixedHeight(110)
+        self.scalar_groupBox.setFixedHeight(int(110*self.resolution_scaling))
         self.scalar_groupBox.setLayout(layoutTabSettings)
 
         self.layoutScalar = QtWidgets.QVBoxLayout()
@@ -561,7 +566,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettings.addWidget(self.plt_toolbar_1)
 
         self.fields_groupBox = QtWidgets.QGroupBox("Fields Diagnostics")
-        self.fields_groupBox.setFixedHeight(210)
+        self.fields_groupBox.setFixedHeight(int(210*self.resolution_scaling))
         self.fields_groupBox.setLayout(layoutTabSettings)
 
         self.layoutFields = QtWidgets.QVBoxLayout()
@@ -629,7 +634,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettings.addWidget(self.plt_toolbar_2_displace)
 
         self.track_groupBox = QtWidgets.QGroupBox("Track Particles Diagnostic")
-        self.track_groupBox.setFixedHeight(150)
+        self.track_groupBox.setFixedHeight(int(125*self.resolution_scaling))
         self.track_groupBox.setLayout(layoutTabSettings)
 
         self.layoutTrack = QtWidgets.QVBoxLayout()
@@ -698,7 +703,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettings.addWidget(self.plt_toolbar_3)
 
         self.plasma_groupBox = QtWidgets.QGroupBox("Plasma Diagnostics")
-        self.plasma_groupBox.setFixedHeight(210)
+        self.plasma_groupBox.setFixedHeight(int(210*self.resolution_scaling))
         # self.plasma_groupBox.setMaximumWidth(400)
         self.plasma_groupBox.setLayout(layoutTabSettings)
 
@@ -735,7 +740,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         #-------------- MAIN Groupbox -----------------
         self.compa_load_sim_BUTTON = QtWidgets.QPushButton('Open Comparison')
-        self.compa_load_sim_BUTTON.setFixedWidth(150)
+        self.compa_load_sim_BUTTON.setFixedWidth(int(150*self.resolution_scaling))
         self.compa_load_status_LABEL = QtWidgets.QLabel("")
         self.compa_load_status_LABEL.setStyleSheet("color: black")
         self.compa_load_status_LABEL.setAlignment(QtCore.Qt.AlignCenter)
@@ -744,7 +749,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.compa_sim_directory_name_LABEL.setFont(self.medium_bold_FONT)
         self.compa_sim_directory_name_LABEL.adjustSize()
         self.compa_groupBox = QtWidgets.QGroupBox("Settings")
-        self.compa_groupBox.setFixedHeight(60)
+        self.compa_groupBox.setFixedHeight(int(60*self.resolution_scaling))
         layoutCompaLoadSim =  QtWidgets.QHBoxLayout()
         layoutCompaLoadSim.addWidget(self.compa_load_sim_BUTTON)
         layoutCompaLoadSim.addWidget(self.compa_load_status_LABEL)
@@ -773,7 +778,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettingsCompaScalar.addLayout(layoutCompaTabSettingsCheck)
         layoutTabSettingsCompaScalar.addWidget(self.plt_toolbar_4_scalar)
         self.compa_scalar_groupBox = QtWidgets.QGroupBox("Compa Scalar Diagnostics")
-        self.compa_scalar_groupBox.setFixedHeight(110)
+        self.compa_scalar_groupBox.setFixedHeight(int(110*self.resolution_scaling))
         self.compa_scalar_groupBox.setLayout(layoutTabSettingsCompaScalar)
 
         #-------------- COMPA BINNING Groupbox -----------------#
@@ -797,7 +802,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layoutTabSettingsCompaBinning.addWidget(self.plt_toolbar_4_binning)
         self.compa_binning_groupBox = QtWidgets.QGroupBox("Particle Binning Diagnostics")
-        self.compa_binning_groupBox.setFixedHeight(150)
+        self.compa_binning_groupBox.setFixedHeight(int(150*self.resolution_scaling))
         self.compa_binning_groupBox.setLayout(layoutTabSettingsCompaBinning)
 
         # self.layoutCompaBinning = QtWidgets.QVBoxLayout()
@@ -844,7 +849,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettingsCompaPlasma.addLayout(layoutCompaXcutSlider)
         layoutTabSettingsCompaPlasma.addWidget(self.plt_toolbar_4_plasma)
         self.compa_plasma_groupBox = QtWidgets.QGroupBox("Compa Plasma Diagnostics")
-        self.compa_plasma_groupBox.setFixedHeight(210)
+        self.compa_plasma_groupBox.setFixedHeight(int(210*self.resolution_scaling))
         self.compa_plasma_groupBox.setLayout(layoutTabSettingsCompaPlasma)
 
         #-------------- COMPA INTENSITY Groupbox -----------------#
@@ -928,7 +933,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettingsCompaIntensity.addWidget(self.plt_toolbar_4_intensity_time)
         
         self.compa_intensity_groupBox = QtWidgets.QGroupBox("Compa Intensity Diagnostics")
-        self.compa_intensity_groupBox.setFixedHeight(170)
+        self.compa_intensity_groupBox.setFixedHeight(int(170*self.resolution_scaling))
         self.compa_intensity_groupBox.setLayout(layoutTabSettingsCompaIntensity)
         
         #---- add to layout ----# 
@@ -986,7 +991,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layoutTabSettingsBinning.addWidget(self.plt_toolbar_5)
         self.binning_groupBox = QtWidgets.QGroupBox("Particle Binning Diagnostics")
-        self.binning_groupBox.setFixedHeight(150)
+        self.binning_groupBox.setFixedHeight(int(150*self.resolution_scaling))
         self.binning_groupBox.setLayout(layoutTabSettingsBinning)
 
         self.layoutBinning = QtWidgets.QVBoxLayout()
@@ -1069,7 +1074,7 @@ class MainWindow(QtWidgets.QMainWindow):
         layoutTabSettings.addWidget(self.plt_toolbar_6_time)
         
         self.intensity_groupBox = QtWidgets.QGroupBox("Intensity Diagnostics")
-        self.intensity_groupBox.setFixedHeight(170)
+        self.intensity_groupBox.setFixedHeight(int(170*self.resolution_scaling))
         self.intensity_groupBox.setLayout(layoutTabSettings)
         
         self.layoutIntensity = QtWidgets.QVBoxLayout()
@@ -1089,7 +1094,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.layoutTornado = QtWidgets.QVBoxLayout()
         self.tornado_groupBox = QtWidgets.QGroupBox("Infos")
-        self.tornado_groupBox.setFixedHeight(75)
+        self.tornado_groupBox.setFixedHeight(100)
 
         tornado_group_box_layout = QtWidgets.QHBoxLayout()
 
@@ -1349,7 +1354,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.is_sim_loaded:
             print(self.sim_directory_path)
             clipboard = QtWidgets.QApplication.clipboard()
-            text = f"""import os\nimport sys\nimport numpy as np\nimport matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/jerem/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
+            text = f"""import os\nimport sys\nimport numpy as np\nimport matplotlib.pyplot as plt\nmodule_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'\nsys.path.insert(0, module_dir_happi)\nimport happi\nS = happi.Open('{self.sim_directory_path}')\nl0=2*np.pi\n"""
             clipboard.setText(text)
             # self.sim_directory_name_LABEL.setStyleSheet("background-color: lightgreen")
             # app.processEvents
@@ -1482,6 +1487,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         l0 = 2*pi
         self.w0 = self.S.namelist.w0
+        self.xfoc = self.S.namelist.xfoc
         self.a0 = self.S.namelist.a0
         self.Tp = self.S.namelist.Tp
         self.dx = self.S.namelist.dx
@@ -1514,13 +1520,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.run_time_LABEL.setText(f"{(run_time/60)//60:.0f}h{(run_time/60)%60:0>2.0f} | {NODES} nds ({push_time:.0f} ns)")
         self.diag_id = generate_diag_id.get_diag_id(self.sim_directory_path+"/laser_propagation_3d.py")
         self.diag_id_LABEL.setText(f"D{self.diag_id}")
-
+        
+        
+        self.LAMBDA_UM = 0.8#um
         me = 9.1093837*10**-31
         e = 1.60217663*10**-19
         self.c = 299792458
         eps0 = 8.854*10**-12
         self.toTesla = 10709
-        self.wr = 2*pi*self.c/1e-6
+        self.wr = 2*pi*self.c/(self.LAMBDA_UM*1e-6)
         self.ne_SI = self.ne*eps0*me/e**2*self.wr**2
         self.wp = np.sqrt(self.ne)*self.wr
         self.wi = np.sqrt(self.ne_SI*e**2/(1836*me*eps0))
@@ -1533,11 +1541,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.energy_SI = np.max(self.S.Scalar("Utot").getData())*1000*KNL3
         self.Tp_SI = self.Tp/self.wr*10**15
         
-        self.intensity_SI = (self.a0/0.85)**2 *10**18 #W/cm^2
+        self.intensity_SI = (self.a0/0.85)**2 *10**18/self.LAMBDA_UM**2 #W/cm^2
 
         self.power_SI = self.intensity_SI * pi*(self.w0/l0*10**-4)**2/2
         self.power_SI_from_energy = self.energy_SI/1000/(100*1e-15) #P = E/Tp
+        
+        self.SI_assume_LABEL.setText(f"SI UNITS (𝝀 = {self.LAMBDA_UM} µm)")
 
+        
         self.intensity_SI_LABEL.setText(f"{'%.1E' % decimal.Decimal(str(self.intensity_SI))} W/cm²")
         self.power_SI_LABEL.setText(f"{self.printSI(self.power_SI_from_energy,'W',ndeci=2):}")
         self.energy_SI_LABEL.setText(f"{self.energy_SI:.2f} mJ")
@@ -2222,19 +2233,35 @@ class MainWindow(QtWidgets.QMainWindow):
             self.INIT_tabIntensity = False
             Ey = 0
             Ex = 0
+            # x5_idx = np.where(np.abs(self.intensity_paxisX-5*l0)==np.min(np.abs(self.intensity_paxisX-5*l0)))[0][0]
+
             if boolList[1]:
                 Ey_diag = self.S.Probe("Exy_intensity","Ey")
+                self.E_diag_name_str = "Ey"
                 self.intensity_diag_name_str = "|Ey|^2"
                 Ey = np.array(Ey_diag.getData()).astype(np.float32)
                 intensity_dx = Ey_diag.getAxis("axis1")[:,0][1] - Ey_diag.getAxis("axis1")[:,0][0]
                 any_diag = Ey_diag
+                try:
+                    Ey_hd_diag = self.S.Probe("temp_env","Ey")
+                    self.Ey_hd = np.array(Ey_hd_diag.getData())
+                    abs_E_x0 = np.max(np.abs(self.Ey_hd[:,0,:,:]),axis=(1,2))
+                    self.intensity_t_range_hd = Ey_hd_diag.getTimes()
+                except:
+                    abs_E_x0 = np.max(np.abs(Ey[:,0,:,:]),axis=(1,2))
+                    self.intensity_t_range_hd = Ey_diag.getTimes()
+                    
 
             if boolList[0]:
                 Ex_diag = self.S.Probe("Exy_intensity","Ex")
+                self.E_diag_name_str = "Ex"
                 self.intensity_diag_name_str = "|Ex|^2"
                 Ex = np.array(Ex_diag.getData()).astype(np.float32)
                 intensity_dx = Ex_diag.getAxis("axis1")[:,0][1] - Ex_diag.getAxis("axis1")[:,0][0]
                 any_diag = Ex_diag
+                abs_E_x0 = np.max(np.abs(Ex[:,0,:,:]),axis=(1,2))
+                # Ex_hd = np.array(self.S.Probe("temp_env","Ex"))
+                # abs_E_x0_hd = np.max(np.abs(Ex_hd[:,0,:,:]),axis=(1,2))
 
             average_over = 2*l0 #number of optical period
             intensity_cmap = "jet"
@@ -2296,7 +2323,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.intensity_line_x = self.ax6_a.axvline(x=self.intensity_paxisX[-1]/l0,color="r",ls="--",alpha=0.5)
             
             zR = 0.5*self.w0**2 #Rayleigh length
-            self.waist_max_intensity = self.w0*sqrt(1+(self.intensity_paxisX/zR)**2)*sqrt(abs(self.l1)/2)
+            self.waist_max_intensity = self.w0*sqrt(1+((self.intensity_paxisX-self.xfoc)/zR)**2)*sqrt(abs(self.l1)/2)
             """
             To convert from intensity to a0: a = np.sqrt(2*I)*np.exp(0.5), for |l| = 1
             """
@@ -2309,7 +2336,27 @@ class MainWindow(QtWidgets.QMainWindow):
             self.figure_6.tight_layout()
             self.canvas_6.draw()
             
-            self.ax6_time = self.figure_6_time.add_subplot(1,1,1)
+            self.ax6_time = self.figure_6_time.add_subplot(1,2,1)
+            self.ax6_time_temp_env = self.figure_6_time.add_subplot(1,2,2)
+            
+            pwr = 10
+            c_super=sqrt(2)*special.gamma((pwr+1)/pwr)
+            c_gauss = sqrt(pi/2)
+            def sin2(t):
+                return np.sin(pi*t/self.Tp)**2*(t<=self.Tp)
+            def gauss(t):
+                return np.exp(-((t-self.Tp)/(self.Tp/sqrt(2.)/2/c_gauss))**2)
+            def superGauss(t):
+                return np.exp(-((t-self.Tp)/(self.Tp/sqrt(2.)/2/c_super))**10)
+            # temp_env = sin2
+            t_range_smooth = np.arange(0,self.intensity_t_range_hd[-1]//2,0.1)
+            # print()
+            self.ax6_time_temp_env.plot(self.intensity_t_range_hd[:len(self.intensity_t_range_hd)//2]/l0, abs_E_x0[:len(self.intensity_t_range_hd)//2],".-",label="|E|(x=0)")
+            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*sin2(t_range_smooth),"--",label="sin2")
+            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*gauss(t_range_smooth),"--",label="gauss")
+            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*superGauss(t_range_smooth),"--",label="superGauss")
+            # self.ax6_time_temp_env.plot(self.intensity_t_range, abs_E_x5,".-",label="|E|(x=<x0>)")
+
             
             empirical_corr = 0.98 # To compensate for other effect on top of dis
             groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) # Formula: vg = c^2k/sqrt(wp^2+c^2k^2)
@@ -2323,8 +2370,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.intensity_data_time[t] = self.intensity_data[t,xcut_idx,:,self.intensity_trans_mid_idx]
             self.intensity_im_time = self.ax6_time.imshow(self.intensity_data_time.T, cmap="jet",aspect="auto",extent=self.intensity_extentTY)
             self.figure_6_time.colorbar(self.intensity_im_time, ax = self.ax6_time, pad=0.01)
-            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str} | Time evolution of pulse center (use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
+            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str}\n(use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
             self.ax6_time.set_xlabel("t/t0")
+            self.ax6_time_temp_env.set_title(f"{self.sim_directory_name} |{self.E_diag_name_str}|(t,x=0)",**self.qss_plt_title)
+            self.ax6_time_temp_env.set_xlabel("t/t0")
+            self.ax6_time_temp_env.legend()
+            self.ax6_time_temp_env.grid()
             self.figure_6_time.tight_layout()
             self.canvas_6_time.draw()
             
@@ -2388,7 +2439,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.intensity_im_a.set_clim(vmax=max_intensity)
             self.intensity_im_b.set_clim(vmax=max_intensity)
 
-            self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[-1]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[-1]/l0:.2f}~\lambda$",**self.qss_plt_title)
+            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str}\n(use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
             self.figure_6.tight_layout()
             self.canvas_6.draw()
             check_id = 5000 # Update time distribution too
@@ -2416,10 +2467,14 @@ class MainWindow(QtWidgets.QMainWindow):
             # combo_box_index = self.sim_cut_direction_BOX.currentIndex()
             
             if self.intensity_follow_laser_CHECK.isChecked():
-                empirical_corr = 0.98 #to compensate for other effect on top of dis
-                groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) #c^2k/sqrt(wp^2+c^2k^2)
-                laser_x_pos = max(groupe_velocity*self.intensity_t_range[time_idx]-self.Tp/2,0)
-                xcut_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0]
+                max_intensity = np.max(self.intensity_data[:,:,:,self.intensity_trans_mid_idx],axis=(1,2))
+                xcut_idx = np.where(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx]==max_intensity[time_idx])[0][0] #Use maximum intensity
+                if self.intensity_use_vg_CHECK.isChecked(): 
+                    empirical_corr = 0.98 #to compensate for other effect on top of dis
+                    groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) #c^2k/sqrt(wp^2+c^2k^2)
+                    laser_x_pos = max(groupe_velocity*self.intensity_t_range[time_idx]-self.Tp/2,0)
+                    xcut_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0]
+
                 self.intensity_xcut_SLIDER.setValue(xcut_idx)
             
             self.intensity_im_a.set_data(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx].T)
@@ -2427,8 +2482,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.intensity_line_x.set_xdata(self.intensity_paxisX[xcut_idx]/l0)
             self.circle_max_intensity.set_radius(self.waist_max_intensity[xcut_idx]/l0)
 
-            self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
-
+            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str}\n(use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
+            self.figure_6_time.tight_layout()
             self.canvas_6.draw()
         elif check_id == 1000:
 
@@ -2455,6 +2510,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.circle_max_intensity.set_radius(self.waist_max_intensity[xcut_idx]/l0)
 
                 self.figure_6.suptitle(f"{self.sim_directory_name} {self.intensity_diag_name_str} | $t={self.intensity_t_range[time_idx]/self.l0:.2f}~t_0$ ; $x={self.intensity_paxisX[xcut_idx]/l0:.2f}~\lambda$",**self.qss_plt_title)
+                self.figure_6_time.tight_layout()
                 self.canvas_6.draw()
                 time.sleep(0.10)
                 app.processEvents()
@@ -2475,7 +2531,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.intensity_data_time[t] = self.intensity_data[t,xcut_idx,:,self.intensity_trans_mid_idx]
             self.intensity_im_time.set_data(self.intensity_data_time.T)
             self.intensity_im_time.set_clim(vmax=max_intensity_vmax)
-            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str} | Time evolution of pulse center (use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
+            self.ax6_time.set_title(f"{self.sim_directory_name} {self.intensity_diag_name_str}\n(use group velocity: {self.intensity_use_vg_CHECK.isChecked()})",**self.qss_plt_title)
             self.figure_6_time.tight_layout()
             self.canvas_6_time.draw()
         self.updateInfoLabel()
@@ -2588,8 +2644,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_intensity_line_x2 = self.ax4_intensity_2a.axvline(x=self.intensity_paxisX[-1]/l0,color="r",ls="--",alpha=0.5)
 
             zR = 0.5*self.w0**2 #Rayleigh length
-            self.waist_max_intensity = self.w0*sqrt(1+(self.intensity_paxisX/zR)**2)*sqrt(abs(self.l1)/2)
-            self.waist_max_intensity_compa = self.compa_w0*sqrt(1+(self.intensity_paxisX/zR)**2)*sqrt(abs(self.compa_l1)/2)
+            self.waist_max_intensity = self.w0*sqrt(1+((self.intensity_paxisX-self.xfoc)/zR)**2)*sqrt(abs(self.l1)/2)
+            self.waist_max_intensity_compa = self.compa_w0*sqrt(1+((self.intensity_paxisX-self.xfoc)/zR)**2)*sqrt(abs(self.compa_l1)/2)
             """
             To convert from intensity to a0: a = np.sqrt(2*I)*np.exp(0.5), for |l| = 1
             """
@@ -2958,7 +3014,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.track_trans_distrib_im = ax2.scatter(self.y[0]/l0,self.z[0]/l0,s=1, c=self.Lx_track[-1], vmin=-vmax,vmax=vmax, cmap="RdYlBu")
             self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
-            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+            self.figure_2.suptitle(f"{self.sim_directory_name}: {track_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.2f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
             self.figure_2.tight_layout()
             self.canvas_2.draw()
             
@@ -2972,15 +3028,24 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ax3_displace.grid()
             self.ax4_displace.grid()
             self.track_displace_x = self.ax1_displace.scatter(self.r[0]/l0,(self.x[-1]-self.x[0])/l0,s=1)
-            self.track_displace_r = self.ax2_displace.scatter(self.r[0]/l0,(self.r[-1]-self.r[0])/l0,s=1)
+            self.track_displace_r = self.ax2_displace.scatter(self.r[0]/l0,(self.r[-1]-self.r[0]),s=1)
             self.track_displace_theta = self.ax3_displace.scatter(self.r[0]/l0,(self.theta[-1]-self.theta[0]),s=1)
             self.track_displace_pr = self.ax4_displace.scatter(self.r[0]/l0,self.pr[-1],s=1)
-            self.track_displace_pr_model, = self.ax4_displace.plot(r_range/l0, -self.a0**2/4*self.f_squared_prime(r_range,0)*3/8*self.Tp,"r-")
-            self.track_displace_r_model, = self.ax2_displace.plot(r_range/l0, np.abs(-self.a0**2/4*self.f_squared_prime(r_range,0)*(3/8*self.Tp)**2/2),"r-")
+            x_pos = np.min(self.x[0])
 
+            self.track_displace_pr_model, = self.ax4_displace.plot(r_range/l0, -self.a0**2/4*self.f_squared_prime(r_range,x_pos-self.xfoc)*3/8*self.Tp,"r--",label="Model")
+            
+            r_range_dr = np.arange(self.w0/sqrt(2),2*self.w0,0.1)
+            
+                
+            pr_end = -self.a0**2/4*self.f_squared_prime(r_range_dr, x_pos-self.xfoc)*3/8*self.Tp
+            self.track_displace_r_model, = self.ax2_displace.plot(r_range_dr/l0, pr_end*(self.track_t_range[-1]-self.Tp-x_pos),"r--",label="Model")
+            
             
             # self.figure_2.colorbar(self.track_trans_distrib_im,ax=ax2,pad=0.01)
-            self.figure_2_displace.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+            self.figure_2_displace.suptitle(f"{self.sim_directory_name}: {track_name}| $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+            self.ax2_displace.legend()
+            self.ax4_displace.legend()
             self.figure_2_displace.tight_layout()
             self.canvas_2_displace.draw()
 
@@ -3010,15 +3075,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 r_range = np.arange(0,2*self.w0,0.1)
 
                 self.track_displace_x.set_offsets(np.c_[self.r[0]/l0,(self.x[time_idx]-self.x[0])/l0])
-                self.track_displace_r.set_offsets(np.c_[self.r[0]/l0,(self.r[time_idx]-self.r[0])/l0])
+                self.track_displace_r.set_offsets(np.c_[self.r[0]/l0,(self.r[time_idx]-self.r[0])])
                 self.track_displace_theta.set_offsets(np.c_[self.r[0]/l0,(self.theta[time_idx]-self.theta[0])])
                 self.track_displace_pr.set_offsets(np.c_[self.r[0]/l0,self.pr[time_idx]])
                 self.track_displace_pr_model.set_ydata(-self.a0**2/4*self.f_squared_prime(r_range,0)*3/8*self.Tp)
-                self.track_displace_r_model.set_ydata(np.abs(-self.a0**2/4*self.f_squared_prime(r_range,0)*(self.track_t_range[time_idx])**2/2))
-                self.figure_2_displace.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+                # self.track_displace_r_model.set_ydata(np.abs(-self.a0**2/4*self.f_squared_prime(r_range,0)*(self.track_t_range[time_idx])**2/2)/l0)
+                self.figure_2_displace.suptitle(f"{self.sim_directory_name}: {track_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
                 self.canvas_2_displace.draw()
                 
-            self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+            self.figure_2.suptitle(f"{self.sim_directory_name}: {track_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
             self.canvas_2.draw()
 
         elif check_id == 1000: #PLAY ANIMATION
@@ -3038,7 +3103,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 else:
                     self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
 
-                self.figure_2.suptitle(f"{self.sim_directory_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+                self.figure_2.suptitle(f"{self.sim_directory_name}: {track_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
                 self.canvas_2.draw()
                 time.sleep(anim_speed)
                 app.processEvents()
@@ -4060,10 +4125,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         host = "llrlsi-gw.in2p3.fr"
         user = "jeremy"
-        with open('../tornado_pwdfile.txt', 'r') as f: pwd_crypt = f.read()
+        with open(f"{os.environ['SMILEI_QT']}\\..\\..\\tornado_pwdfile.txt",'r') as f: pwd_crypt = f.read()
         pwd = utils.encrypt(pwd_crypt,-2041000*2-1)
         remote_path = "/sps3/jeremy/LULI/"
-        ssh_key_filepath = r"C:\Users\jerem\.ssh\id_rsa.pub"
+        ssh_key_filepath = r"C:\Users\Jeremy\.ssh\id_rsa.pub"
         remote_path = "/sps3/jeremy/LULI/"
         remote_client = paramiko_SSH_SCP_class.RemoteClient(host,user,pwd,ssh_key_filepath,remote_path)
         res = remote_client.execute_commands([f"du {job_full_path}"])
@@ -4300,6 +4365,8 @@ class ProxyStyle(QtWidgets.QProxyStyle):
         return res
 
 if __name__ == '__main__':
+    os.chdir(os.environ["SMILEI_QT"])
+    
     myappid = u'mycompany.myproduct.subproduct.version' # arbitrary string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 

@@ -9,7 +9,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/jerem/Smilei'
+module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
 from scipy.optimize import curve_fit
@@ -18,18 +18,19 @@ l0=2*np.pi
 from numpy import exp, sin, cos, arctan2, pi, sqrt
 
 sim_loc_list = ["SIM_OPTICAL_NR_HD/opt_base_PML_dx64",
+                "SIM_OPTICAL_A0.3_HD/opt_a0.3_dx48",
                 "SIM_OPTICAL_A1_HD/opt_a1.0_dx64",
                 "SIM_OPTICAL_A1.5_HD/opt_a1.5_dx48",
                 "SIM_OPTICAL_A2_HD/opt_a2.0_dx64",
                 "SIM_OPTICAL_A2.5_HD/opt_a2.5_dx48",
                 "SIM_OPTICAL_A3_HD/opt_a3.0_dx32"]
-a0_range = np.array([0.1,1,1.5,2,2.5,3])
+a0_range = np.array([0.1,0.3,1,1.5,2,2.5,3])
 
 Lx_amplitude_list = []
 
 N_part = 5
 for k,sim_loc in enumerate(sim_loc_list):
-    S = happi.Open(f'C:/_DOSSIERS_PC/_STAGE_LULI_/CLUSTER/{sim_loc}')
+    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_loc}')
     T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px","Ex","Ey","Ez"])
 
     Ltrans = S.namelist.Ltrans
@@ -71,7 +72,7 @@ plt.grid()
 plt.legend()
 
 plt.figure()
-plt.plot(a0_range,Lx_amplitude_list,"o-")
+plt.plot(a0_range,Lx_amplitude_list,"o-",label="Smilei")
 plt.plot()
 plt.grid()
 m,c = popt
@@ -82,3 +83,4 @@ plt.yscale("log")
 plt.xscale("log")
 plt.xlabel("a0")
 plt.ylabel("Lx")
+plt.title("Maximum Lx function of a0")

@@ -153,13 +153,13 @@ class RemoteClient:
 
 if __name__ == '__main__':
     from utils import Popup, encrypt
-
+    import os
     host = "llrlsi-gw.in2p3.fr"
     user = "jeremy"
-    with open('../tornado_pwdfile.txt', 'r') as f: pwd_crypt = f.read()
+    with open(f"{os.environ['SMILEI_QT']}\\..\\tornado_pwdfile.txt",'r') as f: pwd_crypt = f.read()
     pwd = encrypt(pwd_crypt,-2041000*2-1)
     remote_path = r"\sps3\jeremy\LULI\simulations_info.json"
-    ssh_key_filepath = r"C:\Users\jerem\.ssh\id_rsa.pub"
+    ssh_key_filepath = r"C:\Users\Jeremy\.ssh\id_rsa.pub"
     remote_client = RemoteClient(host,user,pwd,ssh_key_filepath,remote_path)
     remote_client.execute_commands(["python3 /sps3/jeremy/LULI/check_sim_state_py.py"])
 

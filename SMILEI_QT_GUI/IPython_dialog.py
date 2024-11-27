@@ -11,7 +11,7 @@ import numpy as np
 from numpy import cos, sin, sqrt, exp, pi
 import time
 import io
-
+import matplotlib.pyplot as plt
 import ctypes
 import re
 
