@@ -1,36 +1,25 @@
 {
-    "50844": {
-        "job_id": "50844",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_NFF/nff_SuperGaussian_a2_Tp6_w2.5",
-        "job_full_name": "nff_SuperGaussian_a2_Tp6_w2.5.sh",
-        "NODES": "4",
-        "progress": 0.03232391970057843,
-        "ETA": "12h11",
-        "expected_time": "5h45",
-        "push_time": 589594,
+    "50897": {
+        "job_id": "50897",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_A2_HD/opt_a2.0_dx48_LLONG",
+        "job_full_name": "opt_a2.0_dx48_LLONG.sh",
+        "NODES": "8",
+        "progress": 0.11614055985705778,
+        "ETA": "2h32",
+        "expected_time": "15h00",
+        "push_time": 780640,
         "diag_id": 32179
     },
-    "50845": {
-        "job_id": "50845",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_NFF/nff_sin2_a2_Tp6_w2.5",
-        "job_full_name": "nff_sin2_a2_Tp6_w2.5.sh",
-        "NODES": "4",
-        "progress": 0.045653036919412464,
-        "ETA": "9h21",
-        "expected_time": "2h55",
-        "push_time": 535099,
+    "50898": {
+        "job_id": "50898",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_A2_HD/opt_a2.0_dx48_TSIM",
+        "job_full_name": "opt_a2.0_dx48_TSIM.sh",
+        "NODES": "8",
+        "progress": 0.07741167129813419,
+        "ETA": "3h50",
+        "expected_time": "16h18",
+        "push_time": 754552,
         "diag_id": 32179
     },
-    "50846": {
-        "job_id": "50846",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_OPTICAL_NFF/nff_Gaussian_a2_Tp6_w2.5",
-        "job_full_name": "nff_Gaussian_a2_Tp6_w2.5.sh",
-        "NODES": "4",
-        "progress": 0.03572643756379721,
-        "ETA": "11h49",
-        "expected_time": "5h23",
-        "push_time": 573544,
-        "diag_id": 32179
-    },
-    "datetime": "27/11 - 17h34"
+    "datetime": "30/11 - 12h28"
 }

@@ -219,7 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.0', 'NFF & Nuter'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.2', 'NFF & Nuter'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -3005,8 +3005,8 @@ class MainWindow(QtWidgets.QMainWindow):
             z_foc_lz = np.mean(self.x[0])
             Tint = 3/8*self.Tp
             Lx2_model = np.max(self.LxEpolar(R_grid,Theta_grid,z_foc_lz,self.w0,self.a0,Tint),axis=0)
-            ax1.plot(r_range/l0,Lx2_model,"k--",alpha=0.75)
-            ax1.plot(r_range/l0,-Lx2_model,"k--",alpha=0.75, label="Model $L_z^{(2)}$")
+            ax1.plot(r_range/l0,Lx2_model,"k--",alpha=1)
+            ax1.plot(r_range/l0,-Lx2_model,"k--",alpha=1, label="Model $L_z^{(2)}$")
 
             ax1.grid()
             ax1.legend()
@@ -3071,6 +3071,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
             
             combo_box_index = self.track_pannel_BOX.currentIndex()
+            track_name = self.track_file_BOX.currentText()
             if combo_box_index==1:
                 r_range = np.arange(0,2*self.w0,0.1)
 

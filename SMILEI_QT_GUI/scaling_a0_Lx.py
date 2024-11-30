@@ -35,6 +35,7 @@ for k,sim_loc in enumerate(sim_loc_list):
 
     Ltrans = S.namelist.Ltrans
     Tp = S.namelist.Tp
+    w0 = S.namelist.w0
     track_N_tot = T0.nParticles
     t_range = T0.getTimes()
     
@@ -57,7 +58,14 @@ for k,sim_loc in enumerate(sim_loc_list):
     Lx_amplitude_list.append(np.nanmax(np.abs(Lx_track[-1])))
     
 
-
+def LxEpolar(r,Theta,z,w0,a0,Tint):
+    expr = -(1 / (2 * (w0**4 + 4 * z**2)**5)) * exp(-((2 * r**2 * w0**2) / (w0**4 + 4 * z**2))) * a0**2 * Tint * w0**6 * (
+        -8 * r**2 * z * (4 * r**4 - 12 * w0**6 + w0**8 - 48 * w0**2 * z**2 + 
+        4 * r**2 * (-4 * w0**2 + w0**4 - 4 * z**2) + 8 * w0**4 * (3 + z**2) + 16 * z**2 * (6 + z**2)) * cos(2 * Theta) - 
+        4 * r**2 * (4 * r**6 + 10 * w0**8 - w0**10 + 32 * w0**4 * z**2 - 32 * z**4 + 
+        4 * r**4 * (-7 * w0**2 + w0**4 - 4 * z**2) - 8 * w0**6 * (3 + z**2) - 16 * w0**2 * z**2 * (6 + z**2) + 
+        r**2 * (-16 * w0**6 + w0**8 - 32 * w0**2 * z**2 + 8 * w0**4 * (7 + z**2) + 16 * z**2 * (10 + z**2))) * sin(2 * Theta))
+    return expr
 
 a0_range_smooth = np.arange(0.1,3.5,0.01)
 
@@ -68,19 +76,37 @@ target_func = func_powerlaw
 
 popt, pcov = curve_fit(target_func, a0_range, Lx_amplitude_list)
 
+
+r_range = np.arange(0,2*w0,0.1)
+theta_range = np.arange(0,2*pi,pi/16)
+R, THETA = np.meshgrid(r_range,theta_range)
+
+Tint = 3/8*Tp
+z0=5*l0
+Lx_max_model_list = []
+for a0 in a0_range_smooth:
+    Lx_max_model = np.max(LxEpolar(R,THETA,z0,w0,a0,Tint))
+    Lx_max_model_list.append(Lx_max_model)
+Lx_max_model_list = np.array(Lx_max_model_list)
+
+Lx_max_model_list_gamma = np.sqrt(1+a0_range_smooth**2)*Lx_max_model_list
+
 plt.grid()
 plt.legend()
 
 plt.figure()
-plt.plot(a0_range,Lx_amplitude_list,"o-",label="Smilei")
-plt.plot()
+plt.plot(a0_range_smooth,Lx_max_model_list,"k-",label="Model")
+plt.plot(a0_range_smooth,Lx_max_model_list_gamma,"r--",label="Model*gamma")
+plt.plot(a0_range,Lx_amplitude_list,"o",c="C0",label="Smilei")
+
 plt.grid()
-m,c = popt
-plt.plot(a0_range_smooth, target_func(a0_range_smooth, *popt), '--',label=f"$a_0^{{{m:.3f}}}$")
-plt.plot(a0_range_smooth, c*a0_range_smooth**2*np.sqrt(1+a0_range_smooth**2),"--",label="$a_0^2\cdot\sqrt{1+a_0^2}$")
+# m,c = popt
+# plt.plot(a0_range_smooth, target_func(a0_range_smooth, *popt), '--',label=f"$a_0^{{{m:.3f}}}$")
+# plt.plot(a0_range_smooth, c*a0_range_smooth**2*np.sqrt(1+a0_range_smooth**2),"--",label="$a_0^2\cdot\sqrt{1+a_0^2}$")
 plt.legend()
 plt.yscale("log")
 plt.xscale("log")
 plt.xlabel("a0")
-plt.ylabel("Lx")
-plt.title("Maximum Lx function of a0")
+plt.title("Lx amplitude scaling with a0")
+plt.ylabel("max |Lx|")
+plt.tight_layout()

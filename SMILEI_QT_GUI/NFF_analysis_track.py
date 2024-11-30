@@ -156,4 +156,66 @@ fig.tight_layout()
 
 plt.pause(0.01)
 
-if SAVE: fig.savefig(rf"{os.environ['SMILEI_QT']}\figures\_OPTICAL_\NFF\nff_track_Tp.png")
+if SAVE: fig.savefig(rf"{os.environ['SMILEI_QT']}\figures\_OPTICAL_\NFF\nff_track_sin2_Tp.png")
+
+
+
+
+sim_list2 = ["nff_Gaussian_a2_Tp6_w2.5","nff_Gaussian_a2_Tp12_w2.5"]
+
+
+fig = plt.figure(figsize=(12,6))
+ax1,ax2 = fig.subplots(1,2)
+ax1.grid()
+ax1.set_yscale("log")
+ax1.set_ylim(1e-9,10)
+ax1.set_xlabel("t/t0")
+ax1.set_ylabel("|Ey|(x=0)")
+ax1.plot(t_range_smooth/l0,a0*exp(-0.5)*sin2(t_range_smooth-x_pos),"k--")
+# ax1.plot(t_range_smooth/l0,a0*exp(-0.5)*gauss(t_range_smooth),"k--")
+# ax1.plot(t_range_smooth/l0,a0*exp(-0.5)*superGauss(t_range_smooth),"k--")
+ax1.set_title("Transverse field |Ey|")
+ax1.legend()
+ax2.grid()
+ax2.set_yscale("log")
+ax2.set_ylim(1e-10,10)
+ax2.set_xlabel("t/t0")
+ax2.set_ylabel("|Ex|(x=0)")
+ax2.plot(t_range_smooth/l0,a0*exp(-0.5)*sin2(t_range_smooth-x_pos)/w0,"k--")
+# ax2.plot(t_range_smooth/l0,a0*exp(-0.5)*gauss(t_range_smooth)/w0,"k--")
+# ax2.plot(t_range_smooth/l0,a0*exp(-0.5)*superGauss(t_range_smooth)/w0,"k--")
+ax2.set_title("Longitudinal field |Ex|")   
+ax2.legend()
+
+for sim in sim_list2:
+    S = happi.Open(base_path+sim)
+    w0 = S.namelist.w0
+    Tp = S.namelist.Tp
+    a0 = S.namelist.a0
+
+    T0 = S.TrackParticles("track_eon", axes=["x","y","z","Ex","Ey"])
+    track_traj = T0.getData()
+    x = track_traj["x"]
+    y = track_traj["y"]-S.namelist.Ltrans/2
+    z = track_traj["z"]-S.namelist.Ltrans/2
+    Ex =track_traj["Ex"]
+    Ey =track_traj["Ey"]
+
+    abs_Ey_x0 = np.max(np.abs(Ey),axis=1)
+    abs_Ex_x0 = np.max(np.abs(Ex),axis=1)
+
+    t_range = T0.getTimes()
+
+    ax1.plot(t_range/l0,abs_Ey_x0,label=sim)
+    ax2.plot(t_range/l0,abs_Ex_x0,label=sim)
+
+ax1.legend()
+ax2.legend()
+
+
+fig.suptitle("Impact of temporal envelope shape on non-physical fields\n TrackParticles at x=5λ")
+fig.tight_layout()
+
+plt.pause(0.01)
+
+if SAVE: fig.savefig(rf"{os.environ['SMILEI_QT']}\figures\_OPTICAL_\NFF\nff_track_Gaussian_Tp.png")
