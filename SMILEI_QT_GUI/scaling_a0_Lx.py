@@ -22,9 +22,10 @@ sim_loc_list = ["SIM_OPTICAL_NR_HD/opt_base_PML_dx64",
                 "SIM_OPTICAL_A1_HD/opt_a1.0_dx64",
                 "SIM_OPTICAL_A1.5_HD/opt_a1.5_dx48",
                 "SIM_OPTICAL_A2_HD/opt_a2.0_dx64",
+                "SIM_OPTICAL_A2.33_HD/opt_a2.33_dx48",
                 "SIM_OPTICAL_A2.5_HD/opt_a2.5_dx48",
                 "SIM_OPTICAL_A3_HD/opt_a3.0_dx32"]
-a0_range = np.array([0.1,0.3,1,1.5,2,2.5,3])
+a0_range = np.array([0.1,0.3,1,1.5,2,2.33,2.5,3])
 
 Lx_amplitude_list = []
 

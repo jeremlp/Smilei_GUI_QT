@@ -6,21 +6,34 @@ Created on Fri Nov 22 14:04:16 2024
 """
 
 
+
 import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-module_dir_happi = r'C:\Users\jerem\Smilei'
+module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
 from scipy import integrate
 plt.close("all")
 
-requested_a0 = 2
-if requested_a0==2:
-    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/opt_a2.0_dx64')
-else:
-    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/opt_a0.3_dx48')
+a0_requested = 2.0
+
+sim_loc_list = ["SIM_OPTICAL_NR_HD/opt_base_PML_dx64",
+                "SIM_OPTICAL_A0.3_HD/opt_a0.3_dx48",
+                "SIM_OPTICAL_A1_HD/opt_a1.0_dx64",
+                "SIM_OPTICAL_A1.5_HD/opt_a1.5_dx48",
+                "SIM_OPTICAL_A2_HD/opt_a2.0_dx64",
+                "SIM_OPTICAL_A2.33_HD/opt_a2.33_dx48",
+                "SIM_OPTICAL_A2.5_HD/opt_a2.5_dx48",
+                "SIM_OPTICAL_A3_HD/opt_a3.0_dx32"]
+a0_range = np.array([0.1,0.3,1,1.5,2,2.33,2.5,3])
+
+a0_sim_idx = np.where(a0_range==a0_requested)[0][0]
+sim_path = sim_loc_list[a0_sim_idx]
+
+S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
+
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_NR_HD/opt_base_PML_dx64')
 
 l0=2*np.pi
@@ -363,7 +376,6 @@ Tp_int_NR = integrate.simpson(temp_env**2,x=t_range)
 Tp_int_R = integrate.simpson(temp_env_Z**2,x=t_range)
 print("Effective pulse duration:",3/8*Tp/l0,Tp_int_NR/l0,Tp_int_R/l0)
 
-COEF = sqrt(1+a0**2)
 
 plt.figure()
 # plt.scatter(r[0]/l0,Lx_track[-1],s=2,alpha=0.25)
@@ -404,6 +416,7 @@ plt.title("Compensation of $1/\gamma$ factor and Tint increase")
 plt.tight_layout()
 
 
+COEF = sqrt(1+(a0)**2)
 plt.figure()
 # plt.scatter(r[0]/l0,Lx_track[-1],s=2,alpha=0.25)
 a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[-1])
@@ -412,19 +425,27 @@ plt.plot(a_range/l0,lower_Lx,"C0",lw=2)
 plt.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei {a0=}")
 
 Lx_max_model = np.max(LxEpolar(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
+COEF = sqrt(1+(a0*f(r_range,x_pos)/exp(-0.5))**2)
 plt.plot(r_range/l0,COEF*Lx_max_model,"k--",alpha=1)
 plt.plot(r_range/l0,-COEF*Lx_max_model,"k--",alpha=1, label="Model $\gamma$$L_z^{(2)}$")
 
 
 d_r_list, d_Lx_list = Lx4_distrib()
+COEF = sqrt(1+(a0*f(d_r_list,x_pos)/exp(-0.5))**2)
 plt.plot(d_r_list/l0,COEF*d_Lx_list,"C2--",alpha=1)
 plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C2--",alpha=1, label="Model $\gamma$$L_z^{(4)}$")
 
+# d_r_list, d_Lx_list = Lx_distrib_FullMotion()
+# a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
+# plt.plot(a_range/l0, COEF*lower_Lx,"r",lw=2)
+# plt.plot(a_range/l0, COEF*upper_Lx,"r",lw=2,label="Exact integration *$\gamma$")
+
 d_r_list, d_Lx_list = Lx_distrib_FullMotion()
 a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
-plt.plot(a_range/l0, COEF*lower_Lx,"r",lw=2)
-plt.plot(a_range/l0, COEF*upper_Lx,"r",lw=2,label="Exact integration *$\gamma$")
+COEF = sqrt(1+(a0*f(a_range,x_pos)/exp(-0.5))**2)
 
+plt.plot(a_range/l0, COEF*lower_Lx,"r-",lw=2)
+plt.plot(a_range/l0, COEF*upper_Lx,"r-",lw=2,label="Exact integration *$\gamma$")
 
 # d_r_list, d_Lx_list = Lx_distrib_FullMotion_PULSE()
 # plt.scatter(d_r_list/l0, d_Lx_list,s=1,label="Full time integration PULSE")
