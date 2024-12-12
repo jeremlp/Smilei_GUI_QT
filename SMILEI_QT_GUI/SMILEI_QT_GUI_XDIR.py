@@ -219,7 +219,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.2', 'NFF & Nuter'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.4', 'tooltip & MB/s'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -596,6 +596,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_file_BOX.addItem("track_eon")
         self.track_file_BOX.addItem("track_eon_full")
         self.track_file_BOX.addItem("track_eon_dense")
+        self.track_file_BOX.addItem("track_eon_net")
 
         layoutTabSettingsTrackFile = QtWidgets.QHBoxLayout()
         self.track_Npart_EDIT = QtWidgets.QLineEdit("10")
@@ -2345,16 +2346,17 @@ class MainWindow(QtWidgets.QMainWindow):
             def sin2(t):
                 return np.sin(pi*t/self.Tp)**2*(t<=self.Tp)
             def gauss(t):
-                return np.exp(-((t-self.Tp)/(self.Tp/sqrt(2.)/2/c_gauss))**2)
-            def superGauss(t):
-                return np.exp(-((t-self.Tp)/(self.Tp/sqrt(2.)/2/c_super))**10)
+                t_center = 1.25*self.Tp
+                return np.exp(-((t-t_center)/(self.Tp*3/8/c_gauss))**2)
+            # def superGauss(t):
+            #     return np.exp(-((t-self.Tp)/(self.Tp/sqrt(2.)/2/c_super))**10)
             # temp_env = sin2
-            t_range_smooth = np.arange(0,self.intensity_t_range_hd[-1]//2,0.1)
+            t_range_smooth = np.arange(0,self.intensity_t_range_hd[-1],0.1)
             # print()
-            self.ax6_time_temp_env.plot(self.intensity_t_range_hd[:len(self.intensity_t_range_hd)//2]/l0, abs_E_x0[:len(self.intensity_t_range_hd)//2],".-",label="|E|(x=0)")
+            self.ax6_time_temp_env.plot(self.intensity_t_range_hd/l0, abs_E_x0,".-",label="|E|(x=0)")
             self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*sin2(t_range_smooth),"--",label="sin2")
             self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*gauss(t_range_smooth),"--",label="gauss")
-            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*superGauss(t_range_smooth),"--",label="superGauss")
+            # self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*superGauss(t_range_smooth),"--",label="superGauss")
             # self.ax6_time_temp_env.plot(self.intensity_t_range, abs_E_x5,".-",label="|E|(x=<x0>)")
 
             
@@ -2492,12 +2494,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loop_in_process = True
 
             xcut_idx = self.intensity_xcut_SLIDER.sliderPosition()
+            max_intensity = np.max(self.intensity_data[:,:,:,self.intensity_trans_mid_idx],axis=(1,2))
+
             for time_idx in range(len(self.intensity_t_range)):
                 
-                empirical_corr = 0.98 #to compensate for other effect on top of dis
-                groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) #c^2k/sqrt(wp^2+c^2k^2)
-                laser_x_pos = max(groupe_velocity*self.intensity_t_range[time_idx]-self.Tp/2,0)
-                laser_x_pos_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0]
+                # empirical_corr = 0.98 #to compensate for other effect on top of dis
+                # groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) #c^2k/sqrt(wp^2+c^2k^2)
+                # laser_x_pos = max(groupe_velocity*self.intensity_t_range[time_idx]-self.Tp/2,0)
+                # laser_x_pos_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0]
+                laser_x_pos_idx = np.where(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx]==max_intensity[time_idx])[0][0] #Use maximum intensity
                 
                 self.intensity_time_SLIDER.setValue(time_idx)
                 self.intensity_xcut_SLIDER.setValue(laser_x_pos_idx)
@@ -3088,6 +3093,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_2.draw()
 
         elif check_id == 1000: #PLAY ANIMATION
+            track_name = self.track_file_BOX.currentText()
             combo_box_index = self.track_file_BOX.currentIndex()
             if combo_box_index==0:
                 anim_speed = 0.001 #high time resolution = higher refresh rate
@@ -3132,7 +3138,7 @@ class MainWindow(QtWidgets.QMainWindow):
         da = 0.04
         t0 = time.perf_counter()
         print("Computing average...",da)
-        a_range = np.arange(0,np.max(X)*1.0+da,da)
+        a_range = np.arange(0,np.nanmax(X)*1.0+da,da)
         M = np.empty(a_range.shape)
         for i,a in enumerate(a_range):
             mask = (X > a-dr_av/2) & (X < a+dr_av/2)
@@ -4011,6 +4017,7 @@ class MainWindow(QtWidgets.QMainWindow):
         asynchronous function called PERIODICALLY
         """
         sim_json_name = "simulations_info.json"
+        self.tornado_refresh_BUTTON.setStyleSheet("") 
         with open(sim_json_name) as f:
             self.sim_dict = json.load(f)
 
@@ -4077,10 +4084,11 @@ class MainWindow(QtWidgets.QMainWindow):
             sim_nodes = int(sim["NODES"])
             sim_push_time = sim["push_time"]
             diag_id = sim["diag_id"]
+            sim_params = sim["sim_params"]
 
             if (sim_id_int not in self.running_sim_hist) and (sim_id_int not in self.finished_sim_hist):
 
-                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA,sim_expected_time, sim_push_time, diag_id)
+                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA,sim_expected_time, sim_push_time, diag_id,sim_params)
                 self.layout_progress_bar_dict[sim_id] = layoutProgressBar
 
                 item_count = self.layoutTornado.count()
@@ -4114,6 +4122,9 @@ class MainWindow(QtWidgets.QMainWindow):
         return
 
     def call_ThreadDownloadSimJSON(self):
+        # print(self.tornado_refresh_BUTTON.styleSheet())
+        self.tornado_refresh_BUTTON.setStyleSheet("background-color : #D22B2B	") 
+        
         self.loadthread = class_threading.ThreadDownloadSimJSON("/sps3/jeremy/LULI/simulations_info.json", os.environ["SMILEI_QT"])
         self.loadthread.finished.connect(self.async_onUpdateTabTornado)
         self.loadthread.start()
@@ -4132,13 +4143,14 @@ class MainWindow(QtWidgets.QMainWindow):
         ssh_key_filepath = r"C:\Users\Jeremy\.ssh\id_rsa.pub"
         remote_path = "/sps3/jeremy/LULI/"
         remote_client = paramiko_SSH_SCP_class.RemoteClient(host,user,pwd,ssh_key_filepath,remote_path)
-        res = remote_client.execute_commands([f"du {job_full_path}"])
-        total_size = int(res[0].split()[0])
+        res = remote_client.execute_commands([f"du {job_full_path} -b"]) #gives size in bytes (1kb = 1024 bytes)
+        total_size_du_b = int(res[0].split()[0])#gives size in bytes (1kb = 1024 bytes)
 
+        self.download_prc_hist_dict[sim_id] = [] #create prc history list for sim_id
         tornado_download_TIMER = QtCore.QTimer()
         refresh_time_s = 2 #s
         tornado_download_TIMER.setInterval(int(refresh_time_s*1000)) #in ms
-        tornado_download_TIMER.timeout.connect(partial(self.onUpdateDownloadBar,total_size, job_full_path, sim_id))
+        tornado_download_TIMER.timeout.connect(partial(self.onUpdateDownloadBar,total_size_du_b, job_full_path, sim_id))
         tornado_download_TIMER.start()
 
         self.loadthread = class_threading.ThreadDownloadSimData(job_full_path)
@@ -4155,19 +4167,37 @@ class MainWindow(QtWidgets.QMainWindow):
         close_sim_BUTTON.setEnabled(False)
         ETA_label.setText("DL")
         return
-    def onUpdateDownloadBar(self, total_size, job_full_path, sim_id):
+    def onUpdateDownloadBar(self, total_size_du_b, job_full_path, sim_id):
         general_folder_name = job_full_path[27:]
         local_folder = os.environ["SMILEI_CLUSTER"]
         local_sim_path = f"{local_folder}\\{general_folder_name}"
 
         size = sum([os.path.getsize(f"{local_sim_path}\{f}") for f in os.listdir(local_sim_path)])
-        prc = round(size/(total_size*1024)*100)
+        
+        print(size,total_size_du_b)
+        prc_exact = size/(total_size_du_b)*100
+        prc = round(prc_exact)
         
         
-        print(f"tornado download {sim_id}:",prc,"%")
+        self.download_prc_hist_dict[sim_id].append(prc_exact) #append prc to download hist
+        
         layout = self.layout_progress_bar_dict[str(sim_id)]
         progress_bar = layout.itemAt(2).widget()
         progress_bar.setValue(prc)
+        
+        if len(self.download_prc_hist_dict[sim_id]) > 4:
+            prc_diff_4_period = (self.download_prc_hist_dict[sim_id][-1] - self.download_prc_hist_dict[sim_id][-5])
+            download_speed_prc_per_s = prc_diff_4_period/(4*2) #speed in %/s (refresh_time_s = 2s in the above function)
+            
+            total_size_MB = total_size_du_b/1048576 #total size in MB
+            download_speed_MB_per_s = download_speed_prc_per_s/100*total_size_MB
+            print(f"tornado download {sim_id}: {prc_exact:.1f} % ({download_speed_MB_per_s:.0f} MB/s)")
+            
+            ETA_label = layout.itemAt(3).widget()
+            ETA_label.setText(f"{download_speed_MB_per_s:.0f} MB/s")
+        else:
+            print(f"tornado download {sim_id}: {prc_exact:.1f} %")
+
         self.updateInfoLabel()
         return
 
@@ -4188,7 +4218,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         ETA_label.setStyleSheet("background-color: #80ef80")
         progress_bar.setStyleSheet(self.qss_progressBar_DOWNLOADED)
-
+        del self.download_prc_hist_dict[sim_id] #delete prc history once download finished
+        
         print(sim_id,"download is finished ! \a") #\a
         utils.Popup().showToast('Tornado download is finished', sim_id,ToastPreset.INFORMATION)
 
@@ -4218,6 +4249,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.finished_sim_hist = []
             self.layout_progress_bar_dict = {}
             self.can_download_sim_dict = {}
+            self.download_prc_hist_dict = {}
 
             for sim_id in self.sim_dict:
                 if sim_id == "datetime": continue #only open sim data and not metadata (located at the end of dict)
@@ -4230,10 +4262,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 sim_nodes = int(sim["NODES"])
                 sim_push_time = sim["push_time"]
                 diag_id = sim["diag_id"]
+                sim_params = sim["sim_params"]
 
                 self.running_sim_hist.append(int(sim_id))
 
-                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_expected_time, sim_push_time, diag_id)
+                layoutProgressBar = self.createLayoutProgressBar(sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_expected_time, sim_push_time, diag_id,sim_params)
 
                 self.layout_progress_bar_dict[sim_id] = layoutProgressBar
                 self.layoutTornado.addLayout(layoutProgressBar)
@@ -4247,7 +4280,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.call_ThreadDownloadSimJSON()
             app.processEvents()
 
-    def createLayoutProgressBar(self, sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_expected_time, sim_push_time, diag_id):
+    def createLayoutProgressBar(self, sim_id, sim_progress, sim_name, sim_nodes, sim_ETA, sim_expected_time, sim_push_time, diag_id,sim_params):
         layoutProgressBar = QtWidgets.QHBoxLayout()
 
         tornado_PROGRESS_BAR = QtWidgets.QProgressBar(maximum=100)
@@ -4264,6 +4297,9 @@ class MainWindow(QtWidgets.QMainWindow):
         sim_name_LABEL.setMinimumWidth(420) #450 FOR LAPTOP
         sim_name_LABEL.setStyleSheet("background-color: lightblue")
         sim_name_LABEL.setWordWrap(True)
+        a0, Tp, w0, dx, description = sim_params
+        l0=2*pi
+        sim_name_LABEL.setToolTip(f"a0={a0}; Tp={Tp/l0:.0f}; w0={w0/l0:.1f}; dx={l0/dx:.0f}\n{description}")
         # sim_name_LABEL.setAlignment(QtCore.Qt.AlignCenter)
 
         sim_node_LABEL = QtWidgets.QLabel(f"NDS:{sim_nodes}")

@@ -34,7 +34,7 @@ class ThreadDownloadSimJSON(QtCore.QThread):
         remote_path = r"\sps3\jeremy\LULI\simulations_info.json"
         ssh_key_filepath = r"C:\Users\Jeremy\.ssh\id_rsa.pub"
         self.remote_client = paramiko_SSH_SCP_class.RemoteClient(host,user,pwd,ssh_key_filepath,remote_path)
-        self.remote_client.execute_commands(["python3 /sps3/jeremy/LULI/check_sim_state_py.py"])
+        self.remote_client.execute_commands(["(source /usr/share/Modules/init/bash; unset MODULEPATH; module use /opt/exp_soft/vo.llr.in2p3.fr/modulefiles_el7; module load python/3.7.0; python /sps3/jeremy/LULI/check_sim_state_py.py)&"])
         self.remote_client.download_file(file_path, local_folder)
         return
     def run(self):

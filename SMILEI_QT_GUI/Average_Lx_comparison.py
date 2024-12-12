@@ -9,7 +9,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-module_dir_happi = r'C:\Users\jerem\Smilei'
+module_dir_happi = r'C:\Users\Jeremy\_LULI_\Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
 from scipy import integrate
@@ -56,17 +56,17 @@ def min_max(X,Y,dr_av=0.6):
         m[i] = np.nanmin(Y[mask])
     return a_range,m,M
 
-simu_list = ["nff_sin2_a2_Tp6_w2.5",
-             'gauss_a2_Tp6',
-             'gauss_a2_Tp6_dx48',
+simu_list = ['gauss_a2_Tp6',
+             'gauss_a2_Tp12_dx32',
              'gauss_a2_Tp12']
+
+# simu_list = ['gauss_a2_Tp6',
+#              'gauss_a2_Tp12']
 #             "nff_SuperGaussian_a2_Tp6_w2.5"
 fig1,ax1 = plt.subplots()
 
-
-
 for k,simu in enumerate(simu_list):
-    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{simu}')
+    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/{simu}')
     T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
 
     Ltrans = S.namelist.Ltrans
@@ -109,8 +109,8 @@ for k,simu in enumerate(simu_list):
     var_list = []
 
     a_range, av_Lx, std_Lx = averageAM(r[0], Lx_track[-1],1)
-    ax1.plot(a_range/l0,av_Lx,f"C{k}.-",label=f"{simu} (dx={l0/S.namelist.dx:.0f})")
-    ax1.fill_between(a_range/l0,av_Lx+std_Lx,av_Lx-std_Lx,alpha=0.25,color=f"C{k}")
+    ax1.plot(a_range/l0,av_Lx,f"C{k}-",label=f"{simu} (dx={l0/S.namelist.dx:.0f})")
+    ax1.fill_between(a_range/l0,av_Lx+std_Lx,av_Lx-std_Lx,alpha=0.2,color=f"C{k}")
 
 ax1.grid()
 ax1.set_xlabel("$r_0/\lambda$")

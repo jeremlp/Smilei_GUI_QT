@@ -138,10 +138,10 @@ class RemoteClient:
             response = stdout.readlines()
             # error = stderr.readlines()
             # print("SSH IN:",stdin.readlines())
-            # print("SSH ERROR:",stderr.readlines())
-            # print("SSH OUT:",stdout.readlines())
-            if len(stderr.readlines())>0:
-                print("SSH ERROR:",stderr.readlines())
+            print("SSH ERROR:","\n".join(stderr.readlines()))
+            print("SSH OUT:","\n".join(stdout.readlines()))
+            # if len(stderr.readlines())>0:
+            #     print("SSH ERROR:",stderr.readlines())
             for line in response:
                 print(
                     f"INPUT: {cmd}\n \
@@ -156,13 +156,12 @@ if __name__ == '__main__':
     import os
     host = "llrlsi-gw.in2p3.fr"
     user = "jeremy"
-    with open(f"{os.environ['SMILEI_QT']}\\..\\tornado_pwdfile.txt",'r') as f: pwd_crypt = f.read()
+    with open(f"{os.environ['SMILEI_QT']}\\..\\..\\tornado_pwdfile.txt",'r') as f: pwd_crypt = f.read()
     pwd = encrypt(pwd_crypt,-2041000*2-1)
-    remote_path = r"\sps3\jeremy\LULI\simulations_info.json"
+    remote_path = r"\grid_mnt\sps3\jeremy\LULI\simulations_info.json"
     ssh_key_filepath = r"C:\Users\Jeremy\.ssh\id_rsa.pub"
     remote_client = RemoteClient(host,user,pwd,ssh_key_filepath,remote_path)
-    remote_client.execute_commands(["python3 /sps3/jeremy/LULI/check_sim_state_py.py"])
-
+    remote_client.execute_commands(["(source /usr/share/Modules/init/bash; unset MODULEPATH; module use /opt/exp_soft/vo.llr.in2p3.fr/modulefiles_el7; module load python/3.7.0; python /sps3/jeremy/LULI/check_sim_state_py.py)&"])
 
 
 

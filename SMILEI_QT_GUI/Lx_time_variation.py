@@ -9,7 +9,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-module_dir_happi = r'C:\Users\jerem\Smilei'
+module_dir_happi = r'C:\Users\Jeremy\_LULI_\Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
 from scipy import integrate
@@ -50,9 +50,11 @@ fig1,ax1 = plt.subplots()
 fig2,ax2 = plt.subplots()
 fig3,ax3 = plt.subplots()
 
+simu_list = ['gauss_a2_Tp6',
+             'gauss_a2_Tp12']
 
 for k,simu in enumerate(simu_list):
-    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{simu}')
+    S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/{simu}')
     T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px","Ex","Ey","Ez","Bx","By","Bz"])
 
     Ltrans = S.namelist.Ltrans
@@ -60,7 +62,6 @@ for k,simu in enumerate(simu_list):
     w0 = S.namelist.w0
     a0 = S.namelist.a0
     l1 = S.namelist.l1
-
 
     track_N_tot = T0.nParticles
     t_range = T0.getTimes()
@@ -148,6 +149,7 @@ ax3.set_yscale("log")
 X0=0.03
 ax3.axhline(0.1*1/20*X0/l0,color="k",ls="--",label="10% <Lx> variation")
 ax3.legend()
+ax3.set_ylim(1e-12,1e3)
 fig3.suptitle("Time derivative of Lx at $r=3\lambda$, in log scale")
 fig3.tight_layout()
 
