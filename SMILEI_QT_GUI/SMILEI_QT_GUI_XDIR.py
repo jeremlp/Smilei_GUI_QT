@@ -241,7 +241,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionOpenTree = QtWidgets.QAction("Open Tree Diag_ID",self)
         self.actionOpenAllTools = QtWidgets.QAction("OPEN ALL TOOLS",self)
 
-
         self.actionDiagScalar = QtWidgets.QAction("Scalar",self)
         self.actionDiagFields = QtWidgets.QAction("Fields",self)
         self.actionDiagIntensity = QtWidgets.QAction("Intensity",self)
@@ -286,7 +285,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.editMenu.addAction(self.actionTornado)
         self.menuBar.addAction(self.editMenu.menuAction())
 
-
         #==============================
         # SETTINGS
         #==============================
@@ -302,7 +300,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # layoutSimulationBasePath = self.creatPara("Cluster directory :",self.sim_directory_name_LABEL)
         # layoutSimulationName = self.creatPara("Simulation :",self.sim_directory_name_LABEL,fontsize=9)
-
 
         self.load_sim_BUTTON = QtWidgets.QPushButton('Open')
         self.load_status_LABEL = QtWidgets.QLabel("")
@@ -1524,6 +1521,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         
         self.LAMBDA_UM = 0.8#um
+        self.SI_assume_LABEL= QtWidgets.QLabel(f"SI UNITS (𝝀 = {self.LAMBDA_UM} µm)")
+
         me = 9.1093837*10**-31
         e = 1.60217663*10**-19
         self.c = 299792458
@@ -2582,9 +2581,12 @@ class MainWindow(QtWidgets.QMainWindow):
             W = round(average_over/intensity_dx)
                         
             self.intensity_paxisX = any_diag.getAxis("axis1")[W:,0] #remove first W values
-            
-            self.intensity_paxisY = any_diag.getAxis("axis2")[:,1]-self.Ltrans/2
-            self.intensity_paxisZ = any_diag.getAxis("axis3")[:,2]-self.Ltrans/2
+            if self.sim_geometry == "AMcylindrical":
+                self.int_r_center = 0
+            else:
+                self.int_r_center = self.Ltrans/2
+            self.intensity_paxisY = any_diag.getAxis("axis2")[:,1]-self.int_r_center
+            self.intensity_paxisZ = any_diag.getAxis("axis3")[:,2]-self.int_r_center
             self.intensity_t_range = any_diag.getTimes()
 
             self.intensity_extentYZ = [self.intensity_paxisY[0]/self.l0,self.intensity_paxisY[-1]/self.l0,
@@ -2943,6 +2945,7 @@ class MainWindow(QtWidgets.QMainWindow):
             print("===== INIT TRACK TAB =====")
 
             track_name = self.track_file_BOX.currentText()
+            
             # self.displayLoadingLabel()
             app.processEvents()
             try:
@@ -2962,9 +2965,14 @@ class MainWindow(QtWidgets.QMainWindow):
             N_part = int(self.track_Npart_EDIT.text())
             self.x = self.track_traj["x"][:,::N_part]
             self.track_N = self.x.shape[1]
-
-            self.y = self.track_traj["y"][:,::N_part]-self.Ltrans/2
-            self.z = self.track_traj["z"][:,::N_part] -self.Ltrans/2
+            
+            if self.sim_geometry == "AMcylindrical":
+                self.track_r_center = 0
+            else:
+                self.track_r_center = self.Ltrans/2
+            
+            self.y = self.track_traj["y"][:,::N_part] -self.track_r_center
+            self.z = self.track_traj["z"][:,::N_part] -self.track_r_center
             self.py = self.track_traj["py"][:,::N_part]
             self.pz = self.track_traj["pz"][:,::N_part]
             self.px = self.track_traj["px"][:,::N_part]
@@ -3009,9 +3017,9 @@ class MainWindow(QtWidgets.QMainWindow):
             R_grid, Theta_grid = np.meshgrid(r_range,theta_range)
             z_foc_lz = np.mean(self.x[0])
             Tint = 3/8*self.Tp
-            Lx2_model = np.max(self.LxEpolar(R_grid,Theta_grid,z_foc_lz,self.w0,self.a0,Tint),axis=0)
+            Lx2_model = np.max(self.LxEpolar_V2_O3(R_grid,Theta_grid,z_foc_lz,self.w0,self.a0,Tint),axis=0)
             ax1.plot(r_range/l0,Lx2_model,"k--",alpha=1)
-            ax1.plot(r_range/l0,-Lx2_model,"k--",alpha=1, label="Model $L_z^{(2)}$")
+            ax1.plot(r_range/l0,-Lx2_model,"k--",alpha=1, label="Model $L_z^{NR}$")
 
             ax1.grid()
             ax1.legend()
@@ -4382,6 +4390,40 @@ class MainWindow(QtWidgets.QMainWindow):
             4 * r**4 * (-7 * w0**2 + w0**4 - 4 * z**2) - 8 * w0**6 * (3 + z**2) - 16 * w0**2 * z**2 * (6 + z**2) + 
             r**2 * (-16 * w0**6 + w0**8 - 32 * w0**2 * z**2 + 8 * w0**4 * (7 + z**2) + 16 * z**2 * (10 + z**2))) * sin(2 * Theta))
         return expr
+    def Ftheta_V2_O3(self,r,theta,z, w0, a0):
+        return (2 * np.exp(-((2 * r**2 * w0**2) / (w0**4 + 4 * z**2))) * a0**2 * r * w0**6 * 
+                (2 * z * np.cos(2 * theta) + (r**2 - w0**2) * np.sin(2 * theta))) / (w0**4 + 4 * z**2)**3
+
+    def Ftheta_V2_O5(self,r,theta,z, w0, a0):
+        numerator = (
+            2 * a0**2 * r * w0**6 * np.exp(-2 * r**2 * w0**2 / (w0**4 + 4 * z**2)) *
+            (
+                2 * z * np.cos(2 * theta) * (
+                    4 * r**4 - 4 * r**2 * (w0**4 + 4 * w0**2 - 4 * z**2) +
+                    (w0**4 + 4 * z**2) * (w0**4 + 12 * w0**2 + 4 * z**2 + 24)
+                ) +
+                np.sin(2 * theta) * (
+                    4 * r**6 - 4 * r**4 * (w0**4 + 7 * w0**2 - 4 * z**2) +
+                    r**2 * (
+                        8 * (w0**4 + 4 * w0**2 + 20) * z**2 +
+                        (w0**4 + 16 * w0**2 + 56) * w0**4 + 16 * z**4
+                    ) -
+                    (w0**4 + 4 * z**2) * (
+                        4 * (w0**2 - 2) * z**2 +
+                        (w0**2 + 4) * (w0**2 + 6) * w0**2
+                    )
+                )
+            )
+        )
+        denominator = (w0**4 + 4 * z**2)**5
+        
+        expression = numerator / denominator
+        return expression
+    def LxEpolar_V2_O3(self,r,theta,z,w0,a0,Tint):
+        return sqrt(1+(self.f(r,z)*a0)**2+ 1/4*(self.f(r,z)*a0)**4) * Tint*r*self.Ftheta_V2_O3(r,theta,z, w0, a0)
+
+    def LxEpolar_V2_O5(self,r,theta,z,w0,a0,Tint):
+        return sqrt(1+(self.f(r,z)*a0)**2+ 1/4*(self.f(r,z)*a0)**4) * Tint*r*self.Ftheta_V2_O5(r,theta,z, w0,a0)
     
     def w(self,z):
         zR = 0.5*self.w0**2

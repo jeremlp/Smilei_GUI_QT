@@ -49,7 +49,7 @@ def averageModified(X,Y,dr_av):
     t1 = time.perf_counter()
     print(f"...{(t1-t0):.0f} s")
     return a_range,M, STD
-def min_max(X,Y,dr_av=0.6):
+def min_max(X,Y,dr_av=0.2):
     M = []
     m = []
     da = 0.05
@@ -76,13 +76,13 @@ ax1.set_xlabel("$r_0/\lambda$")
 ax1.set_title(f"Lx radial distribution\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
 ax1.set_ylabel("Lx")
     
-fig2, ax2 = plt.subplots(1)
-ax2.set_xlabel("$r_0/\lambda$")
-ax2.grid()
-ax2.axvline(w0/sqrt(2)/l0,color="r",ls="--",label="I_max")
-ax2.set_title(f"Mean <Lx> radial distribution\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
-ax2.set_ylabel("<Lx>")
-fig2.tight_layout()
+# fig2, ax2 = plt.subplots(1)
+# ax2.set_xlabel("$r_0/\lambda$")
+# ax2.grid()
+# ax2.axvline(w0/sqrt(2)/l0,color="r",ls="--",label="I_max")
+# ax2.set_title(f"Mean <Lx> radial distribution\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
+# ax2.set_ylabel("<Lx>")
+# fig2.tight_layout()
 
 
 S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp6')
@@ -127,7 +127,7 @@ Lx_track =  y*pz - z*py
     
     
 mean_arr = []
-    
+
 sim_loc_list = ["gauss_a2_Tp6_NET_GAIN_dx32",
                 "gauss_a2_Tp6_NET_GAIN_dx48",
                 "gauss_a2_Tp6_NET_GAIN_dx64",
@@ -135,9 +135,10 @@ sim_loc_list = ["gauss_a2_Tp6_NET_GAIN_dx32",
 dx_range = ["32","48","64","128 AM=8"]
 
 for sim, dx_label in zip(sim_loc_list,dx_range):
+
     S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/{sim}')
     
-    T0 = S.TrackParticles("track_eon_net", axes=["x","y","z","py","pz","px"])
+    T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
     
     Ltrans = S.namelist.Ltrans
     Tp = S.namelist.Tp
@@ -155,7 +156,7 @@ for sim, dx_label in zip(sim_loc_list,dx_range):
     print(f"RESOLUTION: l0/{l0/S.namelist.dx}")
     
     N_part = 1
-        
+    
     if "AM" in dx_label:
         track_r_center = 0
     else:
@@ -180,12 +181,12 @@ for sim, dx_label in zip(sim_loc_list,dx_range):
     # ax1.scatter(r[0]/l0,Lx_track[-1],s=1,alpha = 0.5, label=f"dx=$\lambda$/{dx_value}")
     # ax1.legend()
     
-    a_range, mean_Lx, std_Lx = averageModified(r[0],Lx_track[-1],dr_av = 0.1)
-    ax2.plot(a_range/l0, mean_Lx,".-",label=f"dx=$\lambda$/{dx_label}")
-    ax2.fill_between(a_range/l0, mean_Lx-std_Lx, mean_Lx+std_Lx,alpha=0.25)
-    mean_arr.append(mean_Lx)
-    ax2.legend()
+    a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[-1])
+    ax1.plot(a_range/l0, upper_Lx,".-",label=f"dx=$\lambda$/{dx_label}")
+    # ax2.fill_between(a_range/l0, mean_Lx-std_Lx, mean_Lx+std_Lx,alpha=0.25)
+    # mean_arr.append(mean_Lx)
+    ax1.legend()
 
 
 fig1.tight_layout()
-fig2.tight_layout()
+# fig2.tight_layout()

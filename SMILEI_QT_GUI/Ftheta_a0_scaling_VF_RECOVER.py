@@ -21,7 +21,7 @@ from scipy.interpolate import griddata
 from numba import njit
 plt.close("all")
 
-a0_requested = 2
+a0_requested = 2.0
 
 sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12",
@@ -40,12 +40,12 @@ sim_path = sim_loc_list_12[a0_sim_idx]
 # sim_path = "SIM_OPTICAL_A2_HD/opt_a2.0_dx64"
 
 S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
-# S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp6')
+S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp6')
 
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_A2_HD/opt_a2.0_dx64')
 
 l0=2*np.pi
-T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
+T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px"])
 
 Ltrans = S.namelist.Ltrans
 Tp = S.namelist.Tp
@@ -56,7 +56,7 @@ l1 = S.namelist.l1
 
 track_N_tot = T0.nParticles
 t_range = T0.getTimes()
-t_range_smooth = np.arange(0,t_range[-1],0.01)
+t_range_smooth = np.arange(0,t_range[-1],0.2)
 track_traj = T0.getData()
 
 print(f"RESOLUTION: l0/{l0/S.namelist.dx}")
@@ -87,7 +87,7 @@ vx = px/gamma
 
 tmax = 120
 
-def min_max(X,Y,dr_av=0.1):
+def min_max(X,Y,dr_av=0.5):
     M = []
     m = []
     da = 0.05
@@ -182,10 +182,6 @@ def Ftheta_V2_O5(r,theta,z):
     
     expression = numerator / denominator
     return expression
-def Torque_V2_O3(r,theta,z):
-    """ Torque = r*Ftheta (r^2 appear instead of r) """
-    return (2 * np.exp(-((2 * r**2 * w0**2) / (w0**4 + 4 * z**2))) * a0**2 * r**2 * w0**6 * 
-            (2 * z * np.cos(2 * theta) + (r**2 - w0**2) * np.sin(2 * theta))) / (w0**4 + 4 * z**2)**3
 
 
 def sin2(t,x):
@@ -241,11 +237,20 @@ def gauss2_int_int(t,x):
 def dr_Relat_mean(r,t,x):
     return -1/(1+(f(r,x)*a0)**2/2+ 1/4*1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
 
+def dr_Relat_mean_test(r,t,x):
+    return -a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
+
 def dr_Relat(r,t,x):
     return -1/(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
 
 def dr(r,t,x):
     return -1/sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
+
+def dr_test(r,t,x):
+    delay = 10.25*l0
+    return 0.5*(3/8)*-a0**2/4*f_squared_prime(r, x)*(t-x-delay)**2/2*((t-x-delay)>0);
+#-4.5*l0 for gauss Tp6
+
 
 Nid=0
 x_pos = 5*l0
@@ -306,7 +311,7 @@ plt.xlabel("$r_0\lambda$")
 
 
 #==================================================
-r_requested = 1.*l0
+r_requested = 1.0*l0
 Nid = np.where(np.abs(r[0]-r_requested)==np.min(np.abs(r[0]-r_requested)))[0][0]
 #==================================================
 
@@ -316,7 +321,9 @@ plt.plot(t_range/l0,r[:,Nid]/l0,".-")
 plt.plot(t_range/l0, np.abs(r[0,Nid]+dr(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$")
 plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat_mean(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$ relat 1/$\sqrt{1+(f(r)*a_0)^2/2 + 1/16(f(r)*a0)^4}$")
 plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$ relat 1/$\sqrt{1+(f(r)*a_0)^2 + 1/4(f(r)*a0)^4}$")
+plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_test(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$ test")
 
+# plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat_mean(r[0,Nid]+dr_Relat_mean(r[0,Nid],t_range,x_pos),t_range,x_pos))/l0,label="r+$\Delta r(t)$ recursive")
 
 
 plt.legend()
@@ -324,20 +331,9 @@ plt.grid()
 plt.xlabel("t/t0")
 plt.title(f"Radial displacement models\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
 
-plt.figure()
-
-plt.plot(t_range/l0,1/gamma[:,Nid]*r[:,Nid]*Ftheta_V2_O3(r[:,Nid], theta[:,Nid], x[:,Nid])*gauss(t_range,x[:,Nid])**2,".-",label="r*Ftheta_V2_O3 exact")
-# plt.plot(t_range/l0,(r0) * Ftheta_V2_O3(r0, theta0, x_pos)*gauss(t_range,x[:,Nid])**2,label="r0*Ftheta_V2_O30 NR")
-plt.plot(t_range/l0,1/sqrt(1+(f(r0,x0)*a0)**2/2+ 1/16*(f(r0,x0)*a0)**4) * np.abs(r0+dr(r0,t_range,x_pos)) * Ftheta_V2_O3(np.abs(r0+dr(r0,t_range,x_pos)), theta0, x0)*gauss(t_range,x[:,Nid])**2,label="(r+dr)*Ftheta_V2_O3 dr")
-plt.grid()
-plt.legend()
-
-gamma42 = sqrt(1+(f(r0,x0)*a0)**2/2+ 1/16*(f(r0,x0)*a0)**4)
-a = integrate.simpson(1/gamma42 *r[:,Nid]*Ftheta_V2_O3(r[:,Nid], theta[:,Nid], x[:,Nid])*gauss(t_range,x[:,Nid])**2,x=t_range)
-b = integrate.simpson(1/gamma42 * np.abs(r0+dr(r0,t_range,x_pos)) * Ftheta_V2_O3(np.abs(r0+dr(r0,t_range,x_pos)), theta0, x0)*gauss(t_range,x[:,Nid])**2, x=t_range)
-print("Ftheta_V2_O3 integration (exact, r+dr):",a,b)
 # azeazeeazzaeazzzzzzzzzzzzzzzzzzzzzzzzzzzzzezeazzeaaezeza
 
+# @njit
 def Lx4_distrib(dr_func):
     t_range_lx = t_range_smooth#np.arange(0,t_range[-1],dt)
     temp_env = gauss(t_range_lx,x_pos)
@@ -345,7 +341,7 @@ def Lx4_distrib(dr_func):
     for r in r_range:
         Lx_theta_list = []
         for theta in np.arange(0,2*pi,pi/16):
-            LxR_distrib = integrate.simpson(Torque_V2_O3(np.abs(r+dr_func(r,t_range_lx,x_pos)), theta, x_pos)*temp_env**2, x=t_range_lx)
+            LxR_distrib = integrate.simpson(np.abs(r+dr_func(r,t_range_lx,x_pos)) * Ftheta_V2_O3(np.abs(r+dr_func(r,t_range_lx,x_pos)), theta, x_pos)*temp_env**2, x=t_range_lx)
             Lx_theta_list.append(LxR_distrib)
         distrib_Lx_list.append(np.max(Lx_theta_list))
     return np.array(r_range),np.array(distrib_Lx_list)
@@ -355,20 +351,8 @@ def Lx_distrib_FullMotion():
     distrib_r_list = []
     distrib_Lx_list = []
     for Nid in range(len(x[0])):
-        temp_env = gauss(t_range,x[:,Nid])
-        LxR_distrib = integrate.simpson(1/gamma[:,Nid] * Torque_V2_O3(r[:,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
-        distrib_Lx_list.append(LxR_distrib)
-        distrib_r_list.append(r[0,Nid])
-    return np.array(distrib_r_list),np.array(distrib_Lx_list)
-
-
-def Lx_distrib_FullMotion_FV2O5():
-    t_range_lx = t_range#np.arange(0,t_range[-1],dt)
-    distrib_r_list = []
-    distrib_Lx_list = []
-    for Nid in range(len(x[0])):
-        temp_env = gauss(t_range,x[:,Nid])
-        LxR_distrib = integrate.simpson(1/gamma[:,Nid] * Torque_V2_O3(r[:,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
+        temp_env = sin2(t_range,x[:,Nid])
+        LxR_distrib = integrate.simpson(1/gamma[:,Nid] * r[:,Nid] * Ftheta_V2_O3(r[:,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
         distrib_Lx_list.append(LxR_distrib)
         distrib_r_list.append(r[0,Nid])
     return np.array(distrib_r_list),np.array(distrib_Lx_list)
@@ -376,68 +360,43 @@ def Lx_distrib_FullMotion_FV2O5():
 
 plt.figure()
 # plt.scatter(r[0]/l0,Lx_track[-1],s=4,alpha=1)
-a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[-2])
+a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[-1])
 plt.fill_between(a_range/l0, lower_Lx, upper_Lx,color="lightblue")
 plt.plot(a_range/l0,lower_Lx,"C0",lw=2)
 plt.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei {a0=}")
 
+
 Lx_max_model = np.max(LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
-COEF = sqrt(1+(a0*f(r_range,x_pos))**2+ 1/4*(a0*f(r_range,x_pos))**4)
+COEF = sqrt(1+(f(r_range,x0)*a0)**2 + 1/4* (f(r_range,x0)*a0)**4)
 plt.plot(r_range/l0,COEF*Lx_max_model,"k--")
-plt.plot(r_range/l0,-COEF*Lx_max_model,"k--", label="Model $\gamma$$L_z^{NR}$")
-# Lx_max_model = np.max(LxEpolar_V2_O5(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
-# COEF = sqrt(1+(a0*f(r_range,x_pos))**2+ 1/4*(a0*f(r_range,x_pos))**4)
-# plt.plot(r_range/l0,COEF*Lx_max_model,"k-.")
-# plt.plot(r_range/l0,-COEF*Lx_max_model,"k-.", label="Model $\gamma$$L_z^{(2)}$ O5")
+plt.plot(r_range/l0,-COEF*Lx_max_model,"k--", label="Model $\gamma$$L_z^{(2)}$ O3")
 
-# d_r_list, d_Lx_list = Lx4_distrib()
-# COEF = sqrt(1+(a0*f(d_r_list,x_pos))**2+ 1/4*(a0*f(d_r_list,x_pos))**4)
-# plt.plot(d_r_list/l0,COEF*d_Lx_list,"C1-",lw=2)
-# plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma$$L_z^{(4)}$")
+# COEF_OLD = sqrt(1+(f(d_r_list+dr(d_r_list,1.25*Tp-Tp/4,5*l0),5*l0)*a0)**2+ 1/4*(f(d_r_list+dr(d_r_list,1.25*Tp-Tp/4,5*l0),5*l0)*a0)**4)
 
-
-# d_r_list, d_Lx_list = Lx4_distrib_Relat()
-# COEF = sqrt(1+(f(d_r_list+dr(d_r_list,20*l0,5*l0),5*l0)*a0)**2+ 1/4*(f(d_r_list+dr(d_r_list,20*l0,5*l0),5*l0)*a0)**4)
-# plt.plot(d_r_list/l0,COEF*d_Lx_list,"C2--",lw=2)
-# plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C2--",lw=2, label="Model $\gamma$$L_z^{(4)}$ Relat 1/$\sqrt{1+(f(r)*a_0)^2 + 1/4(f(r)*a0)^4}$")
 
 d_r_list, d_Lx_list = Lx4_distrib(dr_Relat_mean)
-COEF = sqrt(1+(f(d_r_list+dr(d_r_list,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(d_r_list+dr(d_r_list,1.25*Tp+x0,x0),5*l0)*a0)**4)
-# COEF = sqrt(1+(f(d_r_list,5*l0)*a0)**2+ 1/4*(f(d_r_list,5*l0)*a0)**4)
+COEF = sqrt(1+(f(d_r_list+dr_Relat_mean(d_r_list,1.25*Tp+x0,x0),x0)*a0)**2 + 1/4* (f(d_r_list+dr_Relat_mean(d_r_list,1.25*Tp+x0,x0),x0)*a0)**4)
+plt.plot(d_r_list/l0,COEF*d_Lx_list,"C2-",lw=2)
+plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C2-",lw=2, label="Model dr_relat_mean accurate")
 
-plt.plot(d_r_list/l0,COEF*d_Lx_list,"C1-",lw=2)
-plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma_{max}$$L_z^{R}$")
+
+d_r_list, d_Lx_list = Lx4_distrib(dr_test)
+COEF = sqrt(1+f(d_r_list,x0)*a0**2 + 1/4* (f(d_r_list,x0)*a0)**4)
+plt.plot(d_r_list/l0,COEF*d_Lx_list,"C3--",lw=2)
+plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C3--",lw=2, label="Model dr_test OLD")
+
+
+d_r_list, d_Lx_list = Lx4_distrib(dr_test)
+COEF = sqrt(1+(f(d_r_list,x0)*a0)**2 + 1/4* (f(d_r_list,x0)*a0)**4)
+plt.plot(d_r_list/l0,COEF*d_Lx_list,"C3-",lw=2)
+plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C3-",lw=2, label="Model dr_test")
 
 # d_r_list, d_Lx_list = Lx_distrib_FullMotion()
 # a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
-# COEF = sqrt(1+(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**2+ 1/4*(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**4)
-# plt.plot(a_range/l0,COEF*lower_Lx,"r-",lw=2)
-# plt.plot(a_range/l0,COEF*upper_Lx,"r-",lw=2, label="Exact integration")
+# COEF = sqrt(1+f(d_r_list,x)*a0**2/2)
+# plt.plot(a_range/l0,COEF*lower_Lx,"r--",lw=2)
+# plt.plot(a_range/l0,COEF*upper_Lx,"r--",lw=2, label="Exact integration")
 
-# d_r_list, d_Lx_list = Lx_distrib_FullMotion_FV2O3()
-# a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
-# COEF = sqrt(1+(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**2+ 1/4*(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**4)
-# plt.plot(a_range/l0,COEF*lower_Lx,"r-",lw=2)
-# plt.plot(a_range/l0,COEF*upper_Lx,"r-",lw=2, label="Exact integration FV2 O3")
-
-# d_r_list, d_Lx_list = Lx_distrib_FullMotion_FV2O5()
-# a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
-# COEF = sqrt(1+(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**2+ 1/4*(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**4)
-# plt.plot(a_range/l0,COEF*lower_Lx,"r-",lw=2)
-# plt.plot(a_range/l0,COEF*upper_Lx,"r-",lw=2, label="Exact integration FV2 O5")
-
-# d_r_list, d_Lx_list = Lx_distrib_FullMotion_HIGH_ACCURACY()
-# a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
-# plt.plot(a_range/l0,lower_Lx,"-",color="purple",lw=2)
-# plt.plot(a_range/l0,upper_Lx,"-",color="purple",lw=2, label="Exact integration (gamma(r_exact))")
-
-# dx_interp = 0.1*l0
-# y_range = np.arange(-2*w0/sqrt(2),2*w0/sqrt(2),dx_interp)
-# Y, Z = np.meshgrid(y_range,y_range, indexing='ij')
-# THETA = np.arctan2(Z,Y)
-# R = np.sqrt(Y**2+Z**2)
-# plt.scatter(R/l0,2.5*Tp*R*Ftheta_V2_O3_Ax2,s=5,label="Lx from <Ax^2>")
-# plt.scatter(R/l0,0.5*sqrt(1+(f(R,5*l0)*a0)**2+ 1/4*(f(R,5*l0)*a0)**4)*Tp*R*Ftheta_V2_O3_AxPx,s=5,label="Lx from <Ax*px>")
 
 plt.grid()
 plt.legend()
