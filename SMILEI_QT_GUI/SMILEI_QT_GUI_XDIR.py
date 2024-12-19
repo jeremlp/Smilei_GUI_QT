@@ -4182,7 +4182,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         size = sum([os.path.getsize(f"{local_sim_path}\{f}") for f in os.listdir(local_sim_path)])
         
-        print(size,total_size_du_b)
+        print(size/1048576/1024,"GB /",total_size_du_b/1048576/1024,"GB")
         prc_exact = size/(total_size_du_b)*100
         prc = round(prc_exact)
         

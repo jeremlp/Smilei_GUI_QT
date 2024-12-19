@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Dec  6 12:09:46 2024
+Created on Mon Dec 16 17:02:44 2024
 
 @author: Jeremy
 """
+
+
 
 import os
 import sys
@@ -19,9 +21,11 @@ import math
 from scipy import integrate,special
 from scipy.interpolate import griddata
 from numba import njit
+import matplotlib.ticker as ticker
+
 plt.close("all")
 
-a0_requested = 2
+a0_requested = 0.1
 
 sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12",
@@ -40,13 +44,13 @@ sim_path = sim_loc_list_12[a0_sim_idx]
 # sim_path = "SIM_OPTICAL_A2_HD/opt_a2.0_dx64"
 
 
-# sim_path = "SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8"
+sim_path = "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12_dx128_AM8"
 S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
 
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_A2_HD/opt_a2.0_dx64')
 
 l0=2*np.pi
-T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px"])
+T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
 
 Ltrans = S.namelist.Ltrans
 Tp = S.namelist.Tp
@@ -270,63 +274,25 @@ theta_range = np.arange(0,2*pi,pi/16)
 R,THETA = np.meshgrid(r_range,theta_range)
 Lx_max_model = np.max(LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
 
-"""
-AxPx_mean_arr=np.empty_like(px[0])
-Ax2_mean_arr=np.empty_like(px[0])
-for Nid in range(len(x[0])):
-    AxM, AyM, AzM = getE(r[:,Nid],theta[:,Nid],x[:,Nid]-pi/2,t_range)
-    ExM, EyM, EzM = getE(r[:,Nid],theta[:,Nid],x[:,Nid],t_range)
-    AxPx_mean_arr[Nid] = np.mean(AzM[:]*px[:,Nid],axis=0)
-    Ax2_mean_arr[Nid] = np.mean(AzM[:]*AzM[:],axis=0)
-    
-dx_interp = 0.1*l0
-y_range = np.arange(-2*w0/sqrt(2),2*w0/sqrt(2),dx_interp)
-Y, Z = np.meshgrid(y_range,y_range, indexing='ij')
-THETA = np.arctan2(Z,Y)
-R = np.sqrt(Y**2+Z**2)
-
-
-Ax2_interp = griddata(np.c_[y[0],z[0]], Ax2_mean_arr, (Y, Z), method='cubic')
-Ax2_interp[np.isnan(Ax2_interp)] = 0.0
-AxPx_interp = griddata(np.c_[y[0],z[0]], AxPx_mean_arr, (Y, Z), method='cubic')
-AxPx_interp[np.isnan(AxPx_interp)] = 0.0
-
-
-Ax2_dY, Ax2_dZ = np.gradient(Ax2_interp,dx_interp)
-AxPx_dY, AxPx_dZ = np.gradient(AxPx_interp,dx_interp)
-
-Ftheta_V2_O3_Ax2 = 8/3 * -1/4*(-sin(THETA)*Ax2_dY + cos(THETA)*Ax2_dZ)
-Ftheta_V2_O3_AxPx = 8/3 * -1/4*(-sin(THETA)*AxPx_dY + cos(THETA)*AxPx_dZ)
-
-# gamma42 = sqrt(1+(f(r0,x0)*a0)**2+ 1/4*(f(r0,x0)*a0)**4)
-
-plt.figure()
-plt.scatter(R/l0,Tp*R*Ftheta_V2_O3_Ax2,s=2,label="Lx from <Ax^2>")
-plt.scatter(R/l0,sqrt(1+(f(R,5*l0)*a0)**2+ 1/4*(f(R,5*l0)*a0)**4)*Tp*R*Ftheta_V2_O3_AxPx,s=2,label="Lx from <Ax*px>")
-plt.grid()
-plt.legend()
-plt.xlabel("$r_0\lambda$")
-
-# aezeazaez
-"""
-
 
 #==================================================
-r_requested = 0.51*l0
+r_requested = 1.*l0
 Nid = np.where(np.abs(r[0]-r_requested)==np.min(np.abs(r[0]-r_requested)))[0][0]
 #==================================================
 
 plt.figure()
-plt.plot(t_range/l0,r[:,Nid]/l0,".-",label="Smilei r(t)")
+plt.plot(t_range/l0,r[:,Nid]/l0,".-")
 # plt.plot(t_range/l0, r[0,Nid]+dr_short_time(r[0,Nid], t_range))
-# plt.plot(t_range/l0, np.abs(r[0,Nid]+dr(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$")
-plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat_mean(r[0,Nid],t_range,x_pos))/l0,label="$r_0+\Delta r_R(t)$")
-# plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$ relat 1/$\sqrt{1+(f(r)*a_0)^2 + 1/4(f(r)*a0)^4}$")
+plt.plot(t_range/l0, np.abs(r[0,Nid]+dr(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$")
+plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat_mean(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$ relat 1/$\sqrt{1+(f(r)*a_0)^2/2 + 1/16(f(r)*a0)^4}$")
+plt.plot(t_range/l0, np.abs(r[0,Nid]+dr_Relat(r[0,Nid],t_range,x_pos))/l0,label="r+$\Delta r(t)$ relat 1/$\sqrt{1+(f(r)*a_0)^2 + 1/4(f(r)*a0)^4}$")
+
+
 
 plt.legend()
 plt.grid()
 plt.xlabel("t/t0")
-plt.title(f"Radial displacement at $r_0=0.5\lambda$\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
+plt.title(f"Radial displacement models\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
 
 plt.figure()
 
@@ -377,8 +343,14 @@ def Lx_distrib_FullMotion_FV2O5():
         distrib_r_list.append(r[0,Nid])
     return np.array(distrib_r_list),np.array(distrib_Lx_list)
 
+def fmt(x, pos):
+    a, b = '{:.2e}'.format(x).split('e')
+    b = int(b)
+    return r'${} \times 10^{{{}}}$'.format(a, b)
 
-fig1 = plt.figure()
+# plt.colorbar(myplot, format=ticker.FuncFormatter(fmt))
+
+fig1 = plt.figure(figsize=(9,5))
 # plt.scatter(r[0]/l0,Lx_track[-1],s=4,alpha=1)
 a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[-1])
 plt.fill_between(a_range/l0, lower_Lx, upper_Lx,color="lightblue")
@@ -387,28 +359,8 @@ plt.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei {a0=}")
 
 Lx_max_model = np.max(LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
 COEF = sqrt(1+(a0*f(r_range,x_pos))**2+ 1/4*(a0*f(r_range,x_pos))**4)
-plt.plot(r_range/l0,COEF*Lx_max_model,"k--")
-plt.plot(r_range/l0,-COEF*Lx_max_model,"k--", label="Model $\gamma$$L_z^{NR}$")
-
-# d_r_list, d_Lx_list = Lx4_distrib()
-# COEF = sqrt(1+(a0*f(d_r_list,x_pos))**2+ 1/4*(a0*f(d_r_list,x_pos))**4)
-# plt.plot(d_r_list/l0,COEF*d_Lx_list,"C1-",lw=2)
-# plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma$$L_z^{(4)}$")
-
-
-# d_r_list, d_Lx_list = Lx4_distrib(dr_Relat_mean)
-# COEF = sqrt(1+(f(d_r_list+dr(d_r_list,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(d_r_list+dr(d_r_list,1.25*Tp+x0,x0),5*l0)*a0)**4)
-# COEF = sqrt(1+(f(d_r_list,5*l0)*a0)**2+ 1/4*(f(d_r_list,5*l0)*a0)**4)
-
-# plt.plot(d_r_list/l0,COEF*d_Lx_list,"C1-",lw=2)
-# plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma_{max}$$L_z^{R}$")
-
-
-# d_r_list, d_Lx_list = Lx_distrib_FullMotion()
-# a_range, lower_Lx, upper_Lx = min_max(d_r_list,d_Lx_list)
-# COEF = sqrt(1+(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**2+ 1/4*(f(a_range+dr(a_range,20*l0,5*l0),5*l0)*a0)**4)
-# plt.plot(a_range/l0,COEF*lower_Lx,"r-",lw=2)
-# plt.plot(a_range/l0,COEF*upper_Lx,"r-",lw=2, label="Exact integration")
+plt.plot(r_range/l0,Lx_max_model,"k--")
+plt.plot(r_range/l0,-Lx_max_model,"k--", label="Model $L_z^{NR}$")
 
 
 plt.grid()
@@ -430,7 +382,7 @@ Lx_smilei_interp = griddata(np.c_[y[0],z[0]], Lx_track[-1], (Y, Z), method='cubi
 
 fig2 = plt.figure()
 plt.imshow(Lx_smilei_interp, extent=extent, cmap="RdYlBu")
-plt.colorbar(pad=0.01)
+plt.colorbar(pad=0.01,format=ticker.FuncFormatter(fmt))
 plt.xlabel("$y_0/\lambda$")
 plt.ylabel("$z_0/\lambda$")
 plt.title("Smilei $L_x$ ")
@@ -440,7 +392,7 @@ fig3 = plt.figure()
 Lx_NR = LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp)
 
 plt.imshow(Lx_NR, extent=extent, cmap="RdYlBu")
-plt.colorbar(pad=0.01)
+plt.colorbar(pad=0.01,format=ticker.FuncFormatter(fmt))
 plt.xlabel("$y_0/\lambda$")
 plt.ylabel("$z_0/\lambda$")
 plt.title("Model $L_x^{NR}$ ($x=5\lambda$)")
@@ -452,6 +404,6 @@ fig3.tight_layout()
 SAVE = False
 if SAVE:
     
-    fig1.savefig(f"{os.environ['SMILEI_QT']}/figures/_PAPER_OAM_/Non-relat_model/Lx_NR_radial_a0.1.png")
-    fig2.savefig(f"{os.environ['SMILEI_QT']}/figures/_PAPER_OAM_/Non-relat_model/Lx_smilei_transverse_a0.1.png")
-    fig3.savefig(f"{os.environ['SMILEI_QT']}/figures/_PAPER_OAM_/Non-relat_model/Lx_NR_transverse_a0.1.png")
+    fig1.savefig(f"{os.environ['SMILEI_QT']}/figures/_PAPER_OAM_/Non-relat_model/Lx_NR_radial_a{a0}.png")
+    fig2.savefig(f"{os.environ['SMILEI_QT']}/figures/_PAPER_OAM_/Non-relat_model/Lx_smilei_transverse_a{a0}.png")
+    fig3.savefig(f"{os.environ['SMILEI_QT']}/figures/_PAPER_OAM_/Non-relat_model/Lx_NR_transverse_a{a0}.png")

@@ -148,7 +148,7 @@ for sim, dx_label in zip(sim_loc_list,dx_range):
     track_N_tot = T0.nParticles
     t_range = T0.getTimes()
     print(f"{t_range=}")
-    print("Every:",S.namelist.DiagTrackParticles[2].every)
+    # print("Every:",S.namelist.DiagTrackParticles[2].every)
     
     track_traj = T0.getData()
     
@@ -182,7 +182,7 @@ for sim, dx_label in zip(sim_loc_list,dx_range):
     
     a_range, mean_Lx, std_Lx = averageModified(r[0],Lx_track[-1],dr_av = 0.1)
     ax2.plot(a_range/l0, mean_Lx,".-",label=f"dx=$\lambda$/{dx_label}")
-    ax2.fill_between(a_range/l0, mean_Lx-std_Lx, mean_Lx+std_Lx,alpha=0.25)
+    ax2.fill_between(a_range/l0, mean_Lx-std_Lx/2, mean_Lx+std_Lx/2,alpha=0.25)
     mean_arr.append(mean_Lx)
     ax2.legend()
 

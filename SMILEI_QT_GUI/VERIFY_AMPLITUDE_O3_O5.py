@@ -29,8 +29,8 @@ sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a4_Tp12_dx48",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a4.5_Tp12_dx48"]
 
+a0_range_12 = np.array([0.1,1,2,2.33,2.5,3,3.5,4,4.5])
 
-a0_range_12 = np.array([0.1,1,2,2.33,2.5,3,3.5,4])
 
 
 def w(z):
@@ -120,7 +120,7 @@ for k,sim_loc_12 in enumerate(sim_loc_list_12):
 # eazazeazeaez
 
 
-a0_range_smooth = np.arange(0.1,4+0.1,0.01)
+a0_range_smooth = np.arange(0.1,4.5+0.1,0.01)
 
 
 r_range = np.arange(0,2*w0,0.1)
@@ -174,7 +174,7 @@ plt.legend()
 plt.xlabel("a0")
 plt.title(f"Lx amplitude scaling with a0\nTp=12$~t_0;$ w0={w0/l0:.1f}λ")
 plt.ylabel("max |Lx|")
-plt.xlim(1.45,4.15)
+plt.xlim(1.45,4.6)
 plt.tight_layout()
 
 
