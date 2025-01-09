@@ -94,6 +94,9 @@ vx = px/gamma
 tmax = 120
 
 def min_max(X,Y,dr_av=0.15):
+    if len(X) < 100_000: 
+        print("Low N for min_max: siwtcheted to dr_av =0.5")
+        dr_av=0.5
     M = []
     m = []
     da = 0.05
@@ -396,12 +399,12 @@ plt.plot(r_range/l0,-COEF*Lx_max_model,"k--", label="Model $\gamma$$L_z^{NR}$")
 # plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma$$L_z^{(4)}$")
 
 
-# d_r_list, d_Lx_list = Lx4_distrib(dr_Relat_mean)
-# COEF = sqrt(1+(f(d_r_list+dr(d_r_list,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(d_r_list+dr(d_r_list,1.25*Tp+x0,x0),5*l0)*a0)**4)
-# COEF = sqrt(1+(f(d_r_list,5*l0)*a0)**2+ 1/4*(f(d_r_list,5*l0)*a0)**4)
+d_r_list, d_Lx_list = Lx4_distrib(dr_Relat_mean)
+COEF = sqrt(1+(f(d_r_list+dr(d_r_list,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(d_r_list+dr(d_r_list,1.25*Tp+x0,x0),5*l0)*a0)**4)
+COEF = sqrt(1+(f(d_r_list,5*l0)*a0)**2+ 1/4*(f(d_r_list,5*l0)*a0)**4)
 
-# plt.plot(d_r_list/l0,COEF*d_Lx_list,"C1-",lw=2)
-# plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma_{max}$$L_z^{R}$")
+plt.plot(d_r_list/l0,COEF*d_Lx_list,"C1-",lw=2)
+plt.plot(d_r_list/l0,-COEF*d_Lx_list,"C1-",lw=2, label="Model $\gamma_{max}$$L_z^{R}$")
 
 
 # d_r_list, d_Lx_list = Lx_distrib_FullMotion()
@@ -418,6 +421,8 @@ plt.ylabel("$L_x$")
 plt.title(f"$L_x$ distribution comparison between Smilei and model\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
 plt.tight_layout()
 
+
+azeeeeeeeeeeeeeeeeeeeeeeeeeeeeeazzaaez
 
 dx_interp = 0.05*l0
 y_range = np.arange(-2*w0,2*w0,dx_interp)

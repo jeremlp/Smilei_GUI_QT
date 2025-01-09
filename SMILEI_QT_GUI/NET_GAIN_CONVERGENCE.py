@@ -62,19 +62,41 @@ def min_max(X,Y,dr_av=0.6):
         m[i] = np.nanmin(Y[mask])
     return a_range,m,M
     
-dx_range = [32,48,64]
 
-S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/gauss_a2_Tp6_NET_GAIN_dx32_AM8')
+sim_loc_list_6 = ["gauss_a2_Tp6_NET_GAIN_dx32",
+                "gauss_a2_Tp6_NET_GAIN_dx48",
+                "gauss_a2_Tp6_NET_GAIN_dx64",
+                "gauss_a2_Tp6_NET_GAIN_dx128_AM4",
+                "gauss_a2_Tp6_NET_GAIN_dx128_AM8",
+                "gauss_a2_Tp6_NET_GAIN_dx128_AM16",
+                "gauss_a2_Tp6_NET_GAIN_dx256_AM8"]
+dx_range_6 = ["32","48","64","128 AM=4", "128 AM=8","128 AM=16","256 AM=8"]
+
+
+sim_loc_list_12 = ["gauss_a2_Tp12_NET_GAIN_dx128_AM8","gauss_a3_Tp12_NET_GAIN_dx128_AM8"]
+dx_range_12 = ["128 AM=8","128 AM=8"]
+
+Tp_requested = 12
+
+if Tp_requested==6:
+    dx_range = dx_range_6
+    sim_loc_list = sim_loc_list_6
+else:
+    dx_range = dx_range_12
+    sim_loc_list = sim_loc_list_12
+
+
+S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/{sim_loc_list[0]}')
 Tp = S.namelist.Tp
 w0 = S.namelist.w0
 a0 = S.namelist.a0
 l1 = S.namelist.l1
 
-fig1, ax1 = plt.subplots(1)
-ax1.grid()
-ax1.set_xlabel("$r_0/\lambda$")
-ax1.set_title(f"Lx radial distribution\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
-ax1.set_ylabel("Lx")
+# fig1, ax1 = plt.subplots(1)
+# ax1.grid()
+# ax1.set_xlabel("$r_0/\lambda$")
+# ax1.set_title(f"Lx radial distribution\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
+# ax1.set_ylabel("Lx")
     
 fig2, ax2 = plt.subplots(1)
 ax2.set_xlabel("$r_0/\lambda$")
@@ -126,14 +148,10 @@ Lx_track =  y*pz - z*py
 # ax2.legend()
     
     
-mean_arr = []
     
-sim_loc_list = ["gauss_a2_Tp6_NET_GAIN_dx32",
-                "gauss_a2_Tp6_NET_GAIN_dx48",
-                "gauss_a2_Tp6_NET_GAIN_dx64",
-                "gauss_a2_Tp6_NET_GAIN_dx128_AM8"]
-dx_range = ["32","48","64","128 AM=8"]
 
+
+mean_arr = []
 for sim, dx_label in zip(sim_loc_list,dx_range):
     S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/{sim}')
     
@@ -187,5 +205,5 @@ for sim, dx_label in zip(sim_loc_list,dx_range):
     ax2.legend()
 
 
-fig1.tight_layout()
+# fig1.tight_layout()
 fig2.tight_layout()

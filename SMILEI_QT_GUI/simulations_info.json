@@ -1,39 +1,21 @@
 {
-    "51264": {
-        "job_id": "51264",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_NET_GAIN/gauss_a2_Tp6_NET_GAIN_dx128_AM16",
-        "job_full_name": "gauss_a2_Tp6_NET_GAIN_dx128_AM16.sh",
-        "NODES": "12",
-        "progress": 0.9730404136547218,
-        "ETA": "0h58",
-        "expected_time": "12h24",
-        "push_time": 189254,
-        "diag_id": 14828,
+    "51469": {
+        "job_id": "51469",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_NET_GAIN/gauss_a3_Tp12_NET_GAIN_dx256_AM4",
+        "job_full_name": "gauss_a3_Tp12_NET_GAIN_dx256_AM4.sh",
+        "NODES": "20",
+        "progress": 0.2833488235581862,
+        "ETA": "6h25",
+        "expected_time": "19h20",
+        "push_time": 109406,
+        "diag_id": 47859,
         "sim_params": [
-            2.0,
-            37.69911184307752,
-            15.707963267948966,
-            0.04908738521234052,
-            "AMC convergence for net gain"
-        ]
-    },
-    "51284": {
-        "job_id": "51284",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_NET_GAIN/gauss_a2_Tp6_NET_GAIN_dx256_AM8",
-        "job_full_name": "gauss_a2_Tp6_NET_GAIN_dx256_AM8.sh",
-        "NODES": "15",
-        "progress": 0.019415174827724504,
-        "ETA": "21h34",
-        "expected_time": "9h00",
-        "push_time": 103680,
-        "diag_id": 14828,
-        "sim_params": [
-            2.0,
-            37.69911184307752,
+            3.0,
+            75.39822368615503,
             15.707963267948966,
             0.02454369260617026,
             "AMC convergence for net gain"
         ]
     },
-    "datetime": "19/12 - 11h26"
+    "datetime": "09/01 - 12h55"
 }

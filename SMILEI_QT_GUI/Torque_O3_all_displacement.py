@@ -21,6 +21,7 @@ from scipy import integrate,special
 from scipy.interpolate import griddata
 from numba import njit
 import time
+from tqdm import tqdm
 plt.close("all")
 
 a0_requested = 2
@@ -42,7 +43,7 @@ sim_path = sim_loc_list_12[a0_sim_idx]
 # sim_path = "SIM_OPTICAL_A2_HD/opt_a2.0_dx64"
 
 S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
-S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp6')
+# S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a4_Tp6')
 
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/gauss_a2_Tp6_NET_GAIN_dx64')
 
@@ -277,13 +278,14 @@ def Lx4_distrib_max(dr_func, dtheta_func, dx_func):
     return np.array(r_range),np.array(distrib_Lx_list)
 # @njit
 def Lx4_distrib_mean(dr_func, dtheta_func, dx_func, N=10_000):
+    t_range_smooth = np.arange(0,t_range[-1],1)
     t_range_lx = t_range_smooth#np.arange(0,t_range[-1],dt)
     temp_env = gauss(t_range_lx,x_pos)
     mean_Lx_list = []
     std_Lx_list = []
-    r_range = np.linspace(0.1,4*l0,25)
-    for r0 in r_range:
-        t0 = time.perf_counter()
+    r_range = np.linspace(1*l0,2*l0,5)
+    for r0 in tqdm(r_range):
+        # t0 = time.perf_counter()
         Lx_theta_list = []
         for theta0 in np.linspace(0,2*np.pi,N):
             LxR_distrib = integrate.simpson(Torque_V2_O3(np.abs(r0+dr_func(r0,t_range_lx,x0)), theta0+dtheta_func(r0,theta0,t_range_lx,x0), x0+dx_func(r0,t_range_lx,x0))*temp_env**2, x=t_range_lx)
@@ -291,8 +293,8 @@ def Lx4_distrib_mean(dr_func, dtheta_func, dx_func, N=10_000):
         mean_Lx_list.append(np.nanmean(Lx_theta_list))
         # print(sqrt(len(Lx_theta_list)))
         std_Lx_list.append(np.std(Lx_theta_list)/sqrt(len(Lx_theta_list)))
-        t1 = time.perf_counter()
-        print(f"{r0/r_range[-1]*100:.0f}% - time theta av: {(t1-t0):.2f}s (sqrt(N)={sqrt(len(Lx_theta_list)):.2f})")
+        # t1 = time.perf_counter()
+        # print(f"{r0/r_range[-1]*100:.0f}% - time theta av: {(t1-t0):.2f}s (sqrt(N)={sqrt(len(Lx_theta_list)):.2f})")
     return np.array(r_range),np.array(mean_Lx_list), np.array(std_Lx_list)
 
 def Lx_distrib_FullMotion():
@@ -375,38 +377,51 @@ plt.figure()
 # plt.fill_between(a_range/l0, mean_Lx-std_Lx, mean_Lx+std_Lx,alpha=0.25)
 
 
-r_range0, mean_Lx0, std_Lx0 = Lx4_distrib_mean(lambda r,t,x:0,
-                                               lambda r,theta,t,x: 0, 
-                                               lambda r,t,x:0, N=200_000)
-COEF0 = sqrt(1+(f(r_range0+dr(r_range0,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range0+dr(r_range0,1.25*Tp+x0,x0),5*l0)*a0)**4)
+# r_range0, mean_Lx0, std_Lx0 = Lx4_distrib_mean(lambda r,t,x:0,
+#                                                 lambda r,theta,t,x: 0, 
+#                                                 lambda r,t,x:0, N=200_000)
+# COEF0 = sqrt(1+(f(r_range0+dr(r_range0,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range0+dr(r_range0,1.25*Tp+x0,x0),5*l0)*a0)**4)
 
 
-r_range1, mean_Lx1, std_Lx1 = Lx4_distrib_mean(lambda r,t,x:0,
-                                               lambda r,theta,t,x: 0, 
-                                               dx_func, N=200_000)
-COEF1 = sqrt(1+(f(r_range1+dr(r_range1,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range1+dr(r_range1,1.25*Tp+x0,x0),5*l0)*a0)**4)
+# r_range1, mean_Lx1, std_Lx1 = Lx4_distrib_mean(lambda r,t,x:0,
+#                                                lambda r,theta,t,x: 0, 
+#                                                dx_func, N=200_000)
+# COEF1 = sqrt(1+(f(r_range1+dr(r_range1,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range1+dr(r_range1,1.25*Tp+x0,x0),5*l0)*a0)**4)
 
 
-r_range2, mean_Lx2, std_Lx2 = Lx4_distrib_mean(lambda r,t,x:0,
-                                               dtheta_func, 
-                                               lambda r,t,x: 0, N=200_000)
-COEF2 = sqrt(1+(f(r_range2+dr(r_range2,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range2+dr(r_range2,1.25*Tp+x0,x0),5*l0)*a0)**4)
+
+# r_range2, mean_Lx2, std_Lx2 = Lx4_distrib_mean(lambda r,t,x:0,
+#                                                dtheta_func, 
+#                                                dx_func, N=50_000)
+# COEF2 = sqrt(1+(f(r_range2+dr(r_range2,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range2+dr(r_range2,1.25*Tp+x0,x0),5*l0)*a0)**4)
 
 
 r_range3, mean_Lx3, std_Lx3 = Lx4_distrib_mean(lambda r,t,x:0,
                                                dtheta_func, 
-                                               dx_func, N=200_000)
+                                               dx_func, N=100_000)
 COEF3 = sqrt(1+(f(r_range3+dr(r_range3,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range3+dr(r_range3,1.25*Tp+x0,x0),5*l0)*a0)**4)
 
-plt.plot(r_range1/l0,mean_Lx0,"k-",lw=2,label="Model <$L_x$> (0, 0, 0)")
-plt.plot(r_range1/l0,mean_Lx1,"C0-",lw=2,label="Model <$L_x$> (0, 0, $\Delta x$)")
-plt.plot(r_range3/l0,mean_Lx2,"C2-",lw=2,label="Model <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
-plt.plot(r_range3/l0,mean_Lx3,"C3-",lw=2,label="Model <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
+
+# r_range4, mean_Lx4, std_Lx4 = Lx4_distrib_mean(lambda r,t,x:0,
+#                                                dtheta_func, 
+#                                                dx_func, N=200_000)
+# r_range5, mean_Lx5, std_Lx5 = Lx4_distrib_mean(lambda r,t,x:0,
+#                                                dtheta_func, 
+#                                                dx_func, N=600_000)
+
+
+# plt.plot(r_range0/l0,mean_Lx0,"k-",lw=2,label="Model <$L_x$> (0, 0, 0)")
+# plt.plot(r_range1/l0,mean_Lx1,"C0-",lw=2,label="Model <$L_x$> (0, 0, $\Delta x$)")
+plt.plot(r_range2/l0,mean_Lx2,"C1-",lw=2,label="Model 50k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
+plt.plot(r_range3/l0,mean_Lx3,"C2--",lw=2,label="Model 100k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
+# plt.plot(r_range4/l0,mean_Lx4,"C3--",lw=2,label="Model 200k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
+# plt.plot(r_range5/l0,mean_Lx5,"C3--",lw=2,label="Model 600k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
 
 
 # plt.fill_between(r_range3/l0, COEF*(mean_Lx3-std_Lx3/2), COEF*(mean_Lx3+std_Lx3/2), alpha=0.25, color="C2")
 # plt.fill_between(r_range3/l0, COEF*(mean_Lx3-std_Lx3/2), COEF*(mean_Lx3+std_Lx3/2), alpha=0.25, color="C2")
 
+plt.ylim(bottom=0)
 plt.grid()
 plt.legend()
 plt.xlabel("$r_0/\lambda$")

@@ -21,7 +21,11 @@ sys.path.insert(0, module_dir_happi)
 import happi
 from scipy import integrate
 from scipy import special
-
+def w(z):
+    zR = 0.5*w0**2
+    return w0*np.sqrt(1+(z/zR)**2)
+def f(r,z):
+    return (r*sqrt(2)/w(z))**abs(l1)*np.exp(-(r/w(z))**2)
 plt.close("all")
 
 a0_requested = 2.33
@@ -127,10 +131,10 @@ def getE(r,theta,z,t):
 
 r_target=w0/sqrt(2)
 Nid = np.where(np.abs(r[0]-r_target)==np.min(np.abs(r[0]-r_target)))[0][0]
-
+r0 = r[0,Nid]
 
 ExM, EyM, EzM = getE(r[:,Nid],theta[:,Nid],x[:,Nid],t_range)
-AxM, AyM, AzM = getE(r[:,Nid],theta[:,Nid],x[:,Nid]-pi/2,t_range)
+AxM, AyM, AzM = getE(r[:,Nid],theta[:,Nid],x[:,Nid],t_range-pi/2)
 
 
 plt.figure()
@@ -185,12 +189,18 @@ print("-"*10)
 print("AxM*px       =",round(Int_AxPx,round_digits))
 # print("ExM^2*gamma  =",round(Int_ExM2*sqrt(1+a0**2),round_digits))
 # print("ExM^2*gamma2 =",round(Int_ExM2*sqrt(1+a0**2/2),round_digits))
-print("AxM^2*gamma  =",round(Int_AxM2*sqrt(1+a0**2),round_digits))
+print("AxM^2*gamma  =",round(Int_AxM2*sqrt(1+(f(r0,5*l0)*a0)**2 + 1/4*(f(r0,5*l0)*a0)**4),round_digits))
 print("AxM^2*gamma2 =",round(Int_AxM2*sqrt(1+a0**2/2),round_digits))
 
 print("="*15,"\n")
 
 # print("Ax*px =",round(Int_AxPx,5))
+
+plt.figure()
+plt.plot(t_range/l0, px[:,Nid]*AzM)
+plt.plot(t_range/l0, AzM**2)
+plt.grid()
+plt.xlabel("t/t0")
 
 # ==========
 # Ex^2 = 0.23641

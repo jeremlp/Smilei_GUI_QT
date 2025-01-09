@@ -85,7 +85,7 @@ ax2.set_ylabel("<Lx>")
 fig2.tight_layout()
 
 
-S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp6')
+S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_GAUSSIAN/gauss_a32Tp6')
 
 T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
 

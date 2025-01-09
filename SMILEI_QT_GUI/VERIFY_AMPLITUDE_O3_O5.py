@@ -134,6 +134,8 @@ Lx_max_model_list_12 = []
 Lx_max_model_list_12_O3 = []
 Lx_max_model_list_12_O5 = []
 Lx_max_model_list_12_O3_GAMMA = []
+Lx_max_model_list_12_O5_GAMMA = []
+Lx_max_model_list_12_GAMMA_base = []
 
 for a0 in a0_range_smooth:
 
@@ -141,13 +143,16 @@ for a0 in a0_range_smooth:
     
     Lx_max_model_list_12_O3.append(np.max(LxEpolar_V2_O3(R,THETA,5*l0,2.5*l0,a0,3/8*12*l0)))
     Lx_max_model_list_12_O5.append(np.max(LxEpolar_V2_O5(R,THETA,5*l0,2.5*l0,a0,3/8*12*l0)))
-    Lx_max_model_list_12_O3_GAMMA.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2 + 1/4*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
+    Lx_max_model_list_12_O3_GAMMA.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2 + 1/4*(f(R,x0)*a0)**4)*LxEpolar_V2_O3(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
+    Lx_max_model_list_12_O5_GAMMA.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2 + 1/4*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
+    Lx_max_model_list_12_GAMMA_base.append(np.sqrt(1 + (f(w0/sqrt(2),x0)*a0)**2 + 1/4*(f(w0/sqrt(2),x0)*a0)**4)*np.max(LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
 
     
 Lx_max_model_list_12 = np.array(Lx_max_model_list_12)
 Lx_max_model_list_12_O3 = np.array(Lx_max_model_list_12_O3)
 Lx_max_model_list_12_O5 = np.array(Lx_max_model_list_12_O5)
 Lx_max_model_list_12_O3_GAMMA = np.array(Lx_max_model_list_12_O3_GAMMA)
+Lx_max_model_list_12_GAMMA_base = np.array(Lx_max_model_list_12_GAMMA_base)
 
 a0r = a0_range_smooth
 k = f(1.5*l0,5*l0)
@@ -166,6 +171,11 @@ plt.plot(a0_range_smooth,Lx_max_model_list_12_O3 * np.sqrt(1+a0r**2/2),
 
 plt.plot(a0r,Lx_max_model_list_12_O3_GAMMA,
          "-", color="r",label="Max $\sqrt{1+(f*a_0)^2 + 1/4(f*a0)^4}*|L_x^{NR}|$", lw=2)
+# plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA,
+#          "-", color="C3",label="Max $\sqrt{1+(f*a_0)^2 + 1/4(f*a0)^4}*|L_x^{NR}|$ O5", lw=2)
+
+# plt.plot(a0_range_smooth,Lx_max_model_list_12_GAMMA_base,
+#          "-", color="C0", lw=2)
 
 plt.plot(a0_range_12,Lx_amplitude_list_12,"o",c="C0",label="Smilei",markersize=10)
 
