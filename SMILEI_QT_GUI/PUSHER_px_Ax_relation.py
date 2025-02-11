@@ -201,7 +201,7 @@ f_str = str(f).split(" ")[1]
 #==========================
 # LASER PARAMETERS
 #==========================
-a0 = 0.1
+a0 = 2
 w0 = 6*l0
 Tp = 20*l0
 zR = 0.5*w0**2
@@ -213,8 +213,8 @@ C_lp = np.sqrt(1/factorial(abs(l)))*sqrt(2)**abs(l)
 #==========================
 # NUMERICAL PARAMETERS
 #==========================
-dt = 0.02
-N = 10_000
+dt = 0.01
+N = 1_000
 zfoc = 0*l0
 plasma_length = 0*l0
 plasma_pos = 0*l0 + 1e-12
@@ -325,7 +325,7 @@ px_slow = savgol_filter(px[:,Nid], window_length=201,polyorder=2)
 
 plt.figure()
 plt.plot(t_range_plot/l0, Ax, label="Ax")
-plt.plot(t_range_plot/l0, px[:,Nid], label="px")
+# plt.plot(t_range_plot/l0, px[:,Nid], label="px")
 plt.plot(t_range_plot/l0, px[:,Nid]-px_slow, "--",label="px_f")
 
 plt.grid()

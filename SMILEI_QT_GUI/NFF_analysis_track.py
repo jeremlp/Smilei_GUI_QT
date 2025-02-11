@@ -40,8 +40,7 @@ w0 = 2.5*l0
 x_pos = 5*l0
 base_path = f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_NFF/'
 
-sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_Gaussian_a2_Tp6_w2.5","nff_SuperGaussian_a2_Tp6_w2.5"]
-
+sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_sin2_a2_Tp6_w2.5_LEHE","nff_sin2_a2_Tp6_w2.5_BOUCHARD","nff_sin2_a2_Tp6_AMC_dx64","nff_sin2_a2_Tp6_AMC_dx128","nff_Gaussian_a2_Tp6_w2.5","nff_SuperGaussian_a2_Tp6_w2.5"]
 
 
 fig = plt.figure(figsize=(12,6))

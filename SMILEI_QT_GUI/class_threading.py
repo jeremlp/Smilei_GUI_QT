@@ -122,7 +122,7 @@ class ThreadGetFieldsProbeData(QtCore.QThread):
                     fields_data_list.append(Btheta)
                     del T,X,Y,Z,Btheta
 
-                else: fields_data_list.append(np.array(S.Probe(0,fields_names[i]).getData()).astype(np.float32))
+                else: fields_data_list.append(np.array(S.Probe("fields",fields_names[i]).getData()).astype(np.float32))
 
         return fields_data_list
     def run(self):

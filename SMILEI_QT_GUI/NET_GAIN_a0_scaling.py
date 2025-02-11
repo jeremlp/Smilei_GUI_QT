@@ -504,7 +504,7 @@ Lx_max_model = np.max(LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
 
 # @njit
 def Lx4_distrib_mean(r0,N=10_000, Tp=6*l0):
-    t_range_smooth = np.arange(0,t_range[-1],1)
+    t_range_smooth = np.arange(0,t_range[-1],0.1)
     t_range_lx = t_range_smooth#np.arange(0,t_range[-1],dt)
     # print(Tp/l0)
     sigma_gauss = Tp*3/8/c_gauss
@@ -524,7 +524,7 @@ def Lx4_distrib_mean(r0,N=10_000, Tp=6*l0):
     def dtheta_func(r,theta,t,x):
         """ possible 1/r missing for theta velocity"""
         gamma = sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)
-        return 1/gamma/r *Ftheta_V2_O3(r,theta,x) * gauss2_int_int(t, x)
+        return 1/gamma *1/1 *Ftheta_V2_O3(r,theta,x) * gauss2_int_int(t, x)
     
     temp_env = gauss(t_range_lx,x_pos)
 
@@ -544,7 +544,7 @@ r_range = np.arange(0,2*w0,0.1)
 theta_range = np.arange(0,2*pi,pi/16)
 R, THETA = np.meshgrid(r_range,theta_range)
 
-a0_range = np.arange(0.5,10,0.3)
+a0_range = np.arange(1,8,0.3)
 
 mean_Lx4_list_6 = []
 mean_Lx4_list_12= []
@@ -554,6 +554,7 @@ max_Lx4_list_12 = []
 
 r0 = 1.5*l0
 
+N = 50_000
 for a0 in tqdm(a0_range):
     # COEF = sqrt(1+(f(R+dr(R,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range3+dr(r_range3,1.25*Tp+x0,x0),5*l0)*a0)**4)
     COEF = np.sqrt(1 + (f(R,x0)*a0)**2 + 1/4*(f(R,x0)*a0)**4)
@@ -562,8 +563,8 @@ for a0 in tqdm(a0_range):
     max_Lx_12 = np.max(COEF*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0))
 
     
-    mean_Lx_6, std_Lx_6 = Lx4_distrib_mean(r0, N=50_000, Tp=6*l0)
-    mean_Lx_12, std_Lx_12 = Lx4_distrib_mean(r0, N=50_000, Tp=12*l0)
+    mean_Lx_6, std_Lx_6 = Lx4_distrib_mean(r0, N=N, Tp=6*l0)
+    mean_Lx_12, std_Lx_12 = Lx4_distrib_mean(r0, N=N, Tp=12*l0)
     max_Lx4_list_6.append(max_Lx_6)
     max_Lx4_list_12.append(max_Lx_12)
     mean_Lx4_list_6.append(COEF2*mean_Lx_6)
@@ -605,6 +606,11 @@ plt.xlabel("$a_0$")
 plt.tight_layout()
 
 
+np.savetxt(f"{os.environ['SMILEI_QT']}/data/net_gain_model/scaling_a0_V1_Tp12_theta_x_{N}.txt", np.column_stack((a0_range,mean_Lx4_list_12)))
+np.savetxt(f"{os.environ['SMILEI_QT']}/data/net_gain_model/scaling_a0_V1_Tp6_theta_x_{N}.txt", np.column_stack((a0_range,max_Lx4_list_6)))
+
+eazeazaez
+
 r_range = np.arange(0,2*w0,0.1)
 theta_range = np.arange(0,2*pi,pi/16)
 R, THETA = np.meshgrid(r_range,theta_range)
@@ -616,6 +622,12 @@ mean_Lx4_list_12= []
 
 max_Lx4_list_6 = []
 max_Lx4_list_12 = []
+
+
+
+
+# aezazeaze
+
 
 r0 = 1.5*l0
 

@@ -31,7 +31,7 @@ SAVE = True
 
 base_path = f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_NFF/'
 
-sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_Gaussian_a2_Tp6_w2.5","nff_SuperGaussian_a2_Tp6_w2.5"]
+sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_sin2_a2_Tp6_w2.5_LEHE","nff_sin2_a2_Tp6_w2.5_BOUCHARD","nff_sin2_a2_Tp6_AMC_dx64","nff_sin2_a2_Tp6_AMC_dx128","nff_Gaussian_a2_Tp6_w2.5","nff_SuperGaussian_a2_Tp6_w2.5"]
 
 t_range_smooth = np.arange(0,30*l0,0.1)
 
@@ -94,7 +94,7 @@ fig = plt.figure(figsize=(12,6))
 ax1,ax2 = fig.subplots(1,2)
 ax1.grid()
 ax1.set_yscale("log")
-ax1.set_ylim(1e-9,10)
+ax1.set_ylim(1e-10,10)
 ax1.set_xlabel("t/t0")
 ax1.set_ylabel("|Ey|(x=0)")
 ax1.plot(t_range_smooth/l0,a0*exp(-0.5)*sin2(t_range_smooth),"k--")

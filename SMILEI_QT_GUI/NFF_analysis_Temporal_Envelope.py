@@ -13,7 +13,7 @@ import numpy as np
 from numpy import sqrt, exp, sin, cos, arctan2,pi
 from scipy import special
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/jerem/Smilei'
+module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
 sys.path.insert(0, module_dir_happi)
 import happi
 l0=2*np.pi
@@ -38,7 +38,7 @@ a0 = 2
 Tp=6*l0
 w0 = 2.5*l0
 x_pos = 5*l0
-base_path = f'{os.environ["SMILEI_CLUSTER"]}/'
+base_path = f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_NFF/'
 
 sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_Gaussian_a2_Tp6_w2.5","nff_SuperGaussian_a2_Tp6_w2.5",'gauss_a2_Tp6','gauss_a2_Tp12']
 

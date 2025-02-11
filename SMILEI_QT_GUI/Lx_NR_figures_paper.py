@@ -27,7 +27,7 @@ plt.close("all")
 
 a0_requested = 0.1
 
-sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12",
+sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12", #gauss_a1_Tp12_dx128_AM8
                 "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp12",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a2.33_Tp12_dx48",
@@ -44,7 +44,7 @@ sim_path = sim_loc_list_12[a0_sim_idx]
 # sim_path = "SIM_OPTICAL_A2_HD/opt_a2.0_dx64"
 
 
-sim_path = "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12_dx128_AM8"
+sim_path = "SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8"
 S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
 
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_A2_HD/opt_a2.0_dx64')
@@ -269,8 +269,8 @@ extent = [x_range[0]/l0,x_range[-1]/l0,x_range[0]/l0,x_range[-1]/l0]
 # plt.figure()
 # plt.scatter(r[0]/l0,Lx_track[-1],s=1)
 
-r_range = np.arange(0,2*w0,0.1)
-theta_range = np.arange(0,2*pi,pi/16)
+r_range = np.arange(0,2*w0,0.05)
+theta_range = np.arange(0,2*pi,pi/32)
 R,THETA = np.meshgrid(r_range,theta_range)
 Lx_max_model = np.max(LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
 
@@ -314,7 +314,7 @@ def Lx4_distrib(dr_func):
     distrib_Lx_list = []
     for r in r_range:
         Lx_theta_list = []
-        for theta in np.arange(0,2*pi,pi/16):
+        for theta in np.arange(0,2*pi,pi/32):
             LxR_distrib = integrate.simpson(Torque_V2_O3(np.abs(r+dr_func(r,t_range_lx,x_pos)), theta, x_pos)*temp_env**2, x=t_range_lx)
             Lx_theta_list.append(LxR_distrib)
         distrib_Lx_list.append(np.max(Lx_theta_list))
@@ -357,12 +357,10 @@ plt.fill_between(a_range/l0, lower_Lx, upper_Lx,color="lightblue")
 plt.plot(a_range/l0,lower_Lx,"C0",lw=2)
 plt.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei {a0=}")
 
-Lx_max_model = np.max(LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
+Lx_max_model = np.max(LxEpolar_V2_O5(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
 COEF = sqrt(1+(a0*f(r_range,x_pos))**2+ 1/4*(a0*f(r_range,x_pos))**4)
-plt.plot(r_range/l0,Lx_max_model,"k--")
-plt.plot(r_range/l0,-Lx_max_model,"k--", label="Model $L_z^{NR}$")
-
-
+plt.plot(r_range/l0,Lx_max_model,"k-",lw=2)
+plt.plot(r_range/l0,-Lx_max_model,"k-", lw=2,label="Model $L_z^{NR}$")
 plt.grid()
 plt.legend()
 plt.xlabel("$r_0/\lambda$")
@@ -370,6 +368,7 @@ plt.ylabel("$L_x$")
 plt.title(f"$L_x$ distribution comparison between Smilei and model\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
 plt.tight_layout()
 
+aezaezzea
 
 dx_interp = 0.05*l0
 y_range = np.arange(-2*w0,2*w0,dx_interp)
@@ -380,25 +379,22 @@ extent = [y_range[0]/l0,y_range[-1]/l0,y_range[0]/l0,y_range[-1]/l0]
 Lx_smilei_interp = griddata(np.c_[y[0],z[0]], Lx_track[-1], (Y, Z), method='cubic')
 # Lx_smilei_interp[np.isnan(Lx_smilei_interp)] = 0.0
 
-fig2 = plt.figure()
-plt.imshow(Lx_smilei_interp, extent=extent, cmap="RdYlBu")
-plt.colorbar(pad=0.01,format=ticker.FuncFormatter(fmt))
-plt.xlabel("$y_0/\lambda$")
-plt.ylabel("$z_0/\lambda$")
-plt.title("Smilei $L_x$ ")
+fig2, (ax1,ax2) = plt.subplots(1,2, figsize=(10,4))
+im1 = ax1.imshow(Lx_smilei_interp, extent=extent, cmap="RdYlBu")
+fig2.colorbar(im1,ax=ax1,pad=0.01) #,format=ticker.FuncFormatter(fmt)
+ax1.set_xlabel("$y_0/\lambda$")
+ax1.set_ylabel("$z_0/\lambda$")
+ax1.set_title("Smilei $L_x$")
 
-fig3 = plt.figure()
 
 Lx_NR = LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp)
 
-plt.imshow(Lx_NR, extent=extent, cmap="RdYlBu")
-plt.colorbar(pad=0.01,format=ticker.FuncFormatter(fmt))
-plt.xlabel("$y_0/\lambda$")
-plt.ylabel("$z_0/\lambda$")
-plt.title("Model $L_x^{NR}$ ($x=5\lambda$)")
+im2 = ax2.imshow(Lx_NR, extent=extent, cmap="RdYlBu")
+fig2.colorbar(im2, ax=ax2,pad=0.01) #,format=ticker.FuncFormatter(fmt)
+ax1.set_xlabel("$y_0/\lambda$")
+ax2.set_title("Model $L_x^{NR}$ ($x=5\lambda$)")
 fig1.tight_layout()
 fig2.tight_layout()
-fig3.tight_layout()
 
 
 SAVE = False

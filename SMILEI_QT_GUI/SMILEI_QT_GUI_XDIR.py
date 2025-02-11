@@ -55,6 +55,7 @@ from pyqttoast import ToastPreset
 import utils
 # from utils import Popup, encrypt
 import decimal
+import re
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -219,7 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.MEMORY = psutil.virtual_memory
         self.DISK = psutil.disk_usage
         #======================================================================
-        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.4', 'tooltip & MB/s'
+        self.SCRIPT_VERSION_ID, self.SCRIPT_VERSION_NAME ='0.15.6', 'Compa Track'
         #======================================================================
         self.SCRIPT_VERSION = self.SCRIPT_VERSION_ID + " - " + self.SCRIPT_VERSION_NAME
         self.COPY_RIGHT = "Jeremy LA PORTE"
@@ -759,6 +760,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.diag_type_BOX.addItem("Plasma")
         self.diag_type_BOX.addItem("Binning")
         self.diag_type_BOX.addItem("Intensity")
+        self.diag_type_BOX.addItem("Track")
         layoutCompaLoadSim.addWidget(self.diag_type_BOX)
         self.compa_groupBox.setLayout(boxLayout_settings)
 
@@ -934,6 +936,68 @@ class MainWindow(QtWidgets.QMainWindow):
         self.compa_intensity_groupBox.setFixedHeight(int(170*self.resolution_scaling))
         self.compa_intensity_groupBox.setLayout(layoutTabSettingsCompaIntensity)
         
+        #-------------- COMPA TRACK Groupbox -----------------#
+        self.figure_4_track = Figure()
+        self.canvas_4_track = FigureCanvas(self.figure_4_track)
+        self.plt_toolbar_4_track = NavigationToolbar(self.canvas_4_track, self)
+        self.plt_toolbar_4_track.setFixedHeight(self.toolBar_height)
+        self.figure_4_track.tight_layout()
+        self.ax4_track = self.figure_4_track.add_subplot(1,1,1)
+        self.ax4_track.grid()
+        
+
+        self.compa_track_file_BOX = QtWidgets.QComboBox()
+        self.compa_track_file_BOX.addItem("track_eon")
+        self.compa_track_file_BOX.addItem("track_eon_full")
+        self.compa_track_file_BOX.addItem("track_eon_dense")
+        self.compa_track_file_BOX.addItem("track_eon_net")
+
+        layoutTabSettingsTrackFile = QtWidgets.QHBoxLayout()
+        self.compa_track_Npart_EDIT = QtWidgets.QLineEdit("10")
+        self.compa_track_Npart_EDIT.setValidator(self.int_validator)
+        self.compa_track_Npart_EDIT.setMaximumWidth(45)
+
+        self.compa_track_update_offset_CHECK = QtWidgets.QCheckBox("Update offsets")
+        
+        self.compa_track_pannel_BOX = QtWidgets.QComboBox()
+        self.compa_track_pannel_BOX.addItem("Angular Momentum")
+        self.compa_track_pannel_BOX.addItem("Displacements")
+        # self.track_pannel_BOX.addItem("particle trajectories")
+
+        layoutNpart = self.creatPara("Npart=", self.compa_track_Npart_EDIT,adjust_label=True)
+
+        layoutTabSettingsTrackFile.addLayout(layoutNpart)
+        layoutTabSettingsTrackFile.addWidget(self.compa_track_file_BOX)
+        layoutTabSettingsTrackFile.addWidget(self.compa_track_update_offset_CHECK)
+        layoutTabSettingsTrackFile.addWidget(self.compa_track_pannel_BOX)
+
+        layoutTabSettings = QtWidgets.QVBoxLayout()
+        layoutTabSettings.addLayout(layoutTabSettingsTrackFile)
+
+        self.compa_track_time_EDIT = QtWidgets.QLineEdit("0")
+        self.compa_track_time_EDIT.setValidator(self.float_validator)
+        self.compa_track_time_EDIT.setMaximumWidth(70)
+        self.compa_track_time_SLIDER = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.compa_track_time_SLIDER.setRange(0,1)
+        self.compa_track_play_time_BUTTON = QtWidgets.QPushButton("Play")
+
+        layoutTimeSlider = self.creatPara("t/t0=", self.compa_track_time_EDIT,adjust_label=True)
+        layoutTimeSlider.addWidget(self.compa_track_time_SLIDER)
+        layoutTimeSlider.addWidget(self.compa_track_play_time_BUTTON)
+        layoutTabSettings.addLayout(layoutTimeSlider)
+        layoutTabSettings.addWidget(self.plt_toolbar_4_track)
+
+        self.compa_track_groupBox = QtWidgets.QGroupBox("Track Particles Diagnostic")
+        self.compa_track_groupBox.setFixedHeight(int(125*self.resolution_scaling))
+        self.compa_track_groupBox.setLayout(layoutTabSettings)
+
+        # self.compa_layoutTrack = QtWidgets.QVBoxLayout()
+        # self.compa_layoutTrack.addWidget(self.track_groupBox)
+        # self.compa_layoutTrack.addWidget(self.canvas_4_track)
+
+        # self.compa_track_Widget = QtWidgets.QWidget()
+        # self.compa_track_Widget.setLayout(self.compa_layoutTrack)
+        
         #---- add to layout ----# 
         self.layoutCompa = QtWidgets.QVBoxLayout()
         self.layoutCompa.addWidget(self.compa_groupBox)
@@ -947,6 +1011,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.layoutCompa.addWidget(self.compa_intensity_groupBox)
         self.layoutCompa.addWidget(self.canvas_4_intensity)
         self.layoutCompa.addWidget(self.canvas_4_intensity_time)
+        
+        self.layoutCompa.addWidget(self.compa_track_groupBox)
+        self.layoutCompa.addWidget(self.canvas_4_track)
+
+        
         self.compa_plasma_groupBox.hide()
         self.canvas_4_plasma.hide()
         self.compa_binning_groupBox.hide()
@@ -954,6 +1023,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.compa_intensity_groupBox.hide()
         self.canvas_4_intensity.hide()
         self.canvas_4_intensity_time.hide()
+        self.compa_track_groupBox.hide()
+        self.canvas_4_track.hide()
 
         self.compa_Widget = QtWidgets.QWidget()
         self.compa_Widget.setLayout(self.layoutCompa)
@@ -999,7 +1070,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.binning_Widget.setLayout(self.layoutBinning)
 
         #---------------------------------------------------------------------
-        # TAB 6
+        # TAB 6 INTENSITY
         #---------------------------------------------------------------------
         self.figure_6 = Figure()
         self.canvas_6 = FigureCanvas(self.figure_6)
@@ -1190,6 +1261,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.track_Npart_EDIT.returnPressed.connect(lambda:  self.onUpdateTabTrack(-1))
         self.track_update_offset_CHECK.clicked.connect(lambda:  self.onUpdateTabTrack(-1))
         self.track_pannel_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabTrack(5000))
+        #--------------------------------
+        self.compa_track_time_SLIDER.sliderMoved.connect(lambda: self.onUpdateTabCompaTrack(100))
+        self.compa_track_time_SLIDER.sliderPressed.connect(lambda: self.onUpdateTabCompaTrack(100))
+        self.compa_track_time_EDIT.returnPressed.connect(lambda:  self.onUpdateTabCompaTrack(101))
+        self.compa_track_play_time_BUTTON.clicked.connect(lambda: self.onUpdateTabCompaTrack(1000))
+        self.compa_track_file_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabCompaTrack(-1))
+        self.compa_track_Npart_EDIT.returnPressed.connect(lambda:  self.onUpdateTabCompaTrack(-1))
+        self.compa_track_update_offset_CHECK.clicked.connect(lambda:  self.onUpdateTabCompaTrack(-1))
+        self.compa_track_pannel_BOX.currentIndexChanged.connect(lambda: self.onUpdateTabCompaTrack(5000))
 
 
         for i in range(len(self.plasma_check_list)):
@@ -1303,6 +1383,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.INIT_tabPlasma = None
         self.INIT_tabCompa = None
         self.INIT_tabCompaIntensity = None
+        self.INIT_tabCompaTrack = None
+
         self.INIT_tabIntensity = None
         self.INIT_tabTornado = True
 
@@ -1488,7 +1570,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.xfoc = self.S.namelist.xfoc
         self.a0 = self.S.namelist.a0
         self.Tp = self.S.namelist.Tp
-        self.dx = self.S.namelist.dx
+        try:
+            self.dx = self.S.namelist.dx
+        except : self.dx = self.S.namelist.dz
         self.Ltrans = self.S.namelist.Ltrans
         self.Llong = self.S.namelist.Llong
         self.tsim = self.S.namelist.tsim
@@ -1579,6 +1663,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.INIT_tabCompa = True
         self.INIT_tabCompaIntensity = True
         self.INIT_tabIntensity = True
+        self.INIT_tabCompaTrack = True
 
         self.updateInfoLabel()
         if self.actionDiagScalar.isChecked(): self.onUpdateTabScalar(0)
@@ -1611,12 +1696,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.is_compa_sim_loaded = False
         self.compa_load_status_LABEL.setText(self.compa_load_sim_status)
         
+        self.INIT_tabCompaTrack = True
         #Add text to main parameters
         
         l0=2*pi
 
         self.compa_eps, self.compa_l1 = self.compa_S.namelist.eps,self.compa_S.namelist.l1
         self.compa_w0 = self.compa_S.namelist.w0
+        self.compa_sim_geometry = self.compa_S.namelist.Main.geometry
+
         compa_w0_txt = f" / <font color='blue'>{self.compa_w0/l0:.1f}𝝀</font>"
         compa_a0_txt = f" / <font color='blue'>{self.compa_S.namelist.a0:.2f}</font>"
         compa_Tp_txt = f" / <font color='blue'>{self.compa_S.namelist.Tp/l0:.1f}𝝀/c</font>"
@@ -1851,6 +1939,9 @@ class MainWindow(QtWidgets.QMainWindow):
         fields_t_range = self.compa_S.Probe(0,"Ex").getTimes()
 
         ax.plot(fields_t_range/self.l0, AM_full_int_compa,"--", label="AM", c=f"C{len(ax.get_lines())}")
+        AM_max = np.nanmax(AM_full_int_compa)
+        figure.suptitle(f"""{self.sim_directory_name}\nMAX: $Utot={self.Utot_tot_max*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_max*self.KNL3*1000:.2f}$ mJ; $Ukin={self.Ukin_tot_max*self.KNL3*1000:.2f}$ mJ;  AM/U={AM_max/self.Uelm_tot_max:.2f}\nEND: $Utot={self.Utot_tot_end*self.KNL3*1000:.2f}$ mJ;  $Uelm={self.Uelm_tot_end*self.KNL3*1000:.2f}$ mJ;  $Ukin={self.Ukin_tot_end*self.KNL3*1000:.2f}$ mJ""",fontsize=14)
+
         self.writeToFileCompa(self.compa_sim_directory_path,"AM",np.vstack([fields_t_range,AM_full_int_compa]).T)
         ax.legend()
         canvas.draw() 
@@ -1996,7 +2087,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     except FileNotFoundError:
                         print("USE EXPENSIVE AM COMPUTATION COMPA ONLY")
                         self.call_ThreadGetAMIntegral_compa(self.compa_S)
-                AM_max = np.max(AM_data)
+                # AM_max = np.max(AM_data)
 
                 # return
         else:
@@ -2245,7 +2336,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 try:
                     Ey_hd_diag = self.S.Probe("temp_env","Ey")
                     self.Ey_hd = np.array(Ey_hd_diag.getData())
-                    abs_E_x0 = np.max(np.abs(self.Ey_hd[:,0,:,:]),axis=(1,2))
+                    try:
+                        Ez_hd_diag = self.S.Probe("temp_env","Ez")
+                        self.Ez_hd = np.array(Ez_hd_diag.getData())
+                    except:
+                        self.Ez_hd = self.Ey_hd*0 #if no Ez diag, set it to 0
+                        
+                    
+                    abs_E_x0 = np.max(np.sqrt(self.Ey_hd[:,0,:,:]**2 + self.Ez_hd[:,0,:,:]**2),axis=(1,2))
                     self.intensity_t_range_hd = Ey_hd_diag.getTimes()
                 except:
                     abs_E_x0 = np.max(np.abs(Ey[:,0,:,:]),axis=(1,2))
@@ -2267,10 +2365,15 @@ class MainWindow(QtWidgets.QMainWindow):
             intensity_cmap = "jet"
             
             W = round(average_over/intensity_dx)
-                        
+            
+            if "AM" in self.sim_directory_name:
+                track_r_center = 0
+            else:
+                track_r_center = self.Ltrans/2
+            
             self.intensity_paxisX = any_diag.getAxis("axis1")[W:,0] #remove first W values
-            self.intensity_paxisY = any_diag.getAxis("axis2")[:,1]-self.Ltrans/2
-            self.intensity_paxisZ = any_diag.getAxis("axis3")[:,2]-self.Ltrans/2
+            self.intensity_paxisY = any_diag.getAxis("axis2")[:,1]-track_r_center
+            self.intensity_paxisZ = any_diag.getAxis("axis3")[:,2]-track_r_center
             self.intensity_t_range = any_diag.getTimes()
 
             self.intensity_extentYZ = [self.intensity_paxisY[0]/self.l0,self.intensity_paxisY[-1]/self.l0,
@@ -2353,8 +2456,8 @@ class MainWindow(QtWidgets.QMainWindow):
             t_range_smooth = np.arange(0,self.intensity_t_range_hd[-1],0.1)
             # print()
             self.ax6_time_temp_env.plot(self.intensity_t_range_hd/l0, abs_E_x0,".-",label="|E|(x=0)")
-            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*sin2(t_range_smooth),"--",label="sin2")
-            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*gauss(t_range_smooth),"--",label="gauss")
+            # self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5*np.abs(self.l1))*sin2(t_range_smooth),"--",label="sin2")
+            self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5*np.abs(self.l1))*gauss(t_range_smooth),"r--",label="gauss")
             # self.ax6_time_temp_env.plot(t_range_smooth/l0, self.a0*np.exp(-0.5)*superGauss(t_range_smooth),"--",label="superGauss")
             # self.ax6_time_temp_env.plot(self.intensity_t_range, abs_E_x5,".-",label="|E|(x=<x0>)")
 
@@ -3141,6 +3244,109 @@ class MainWindow(QtWidgets.QMainWindow):
         self.updateInfoLabel()
         return
     
+    
+    def onUpdateTabCompaTrack(self,check_id):
+        print(self.is_sim_loaded,self.is_compa_sim_loaded)
+        if  self.is_sim_loaded == False or self.is_compa_sim_loaded==False: return
+        
+        if self.INIT_tabCompaTrack !=False: 
+            self.INIT_tabCompaTrack=False
+            track_name = self.track_file_BOX.currentText()
+            app.processEvents()
+            try:
+                T0 = self.S.TrackParticles(track_name, axes=["x","y","z","py","pz","px"])
+            except Exception:
+                utils.Popup().showError("No TrackParticles diagnostic found")
+                return
+            self.track_N_tot = T0.nParticles
+            self.track_t_range = T0.getTimes()
+            self.track_traj = T0.getData()
+            self.compa_track_time_SLIDER.setMaximum(len(self.track_t_range)-1)
+            self.compa_track_time_SLIDER.setValue(len(self.track_t_range)-1)
+            del T0
+            N_part = int(self.track_Npart_EDIT.text())
+            self.x = self.track_traj["x"][:,::N_part]
+            self.track_N = self.x.shape[1]
+            
+            if self.sim_geometry == "AMcylindrical":
+                self.track_r_center = 0
+            else:
+                self.track_r_center = self.Ltrans/2
+            
+            self.y = self.track_traj["y"][:,::N_part] -self.track_r_center
+            self.z = self.track_traj["z"][:,::N_part] -self.track_r_center
+            self.py = self.track_traj["py"][:,::N_part]
+            self.pz = self.track_traj["pz"][:,::N_part]
+            self.px = self.track_traj["px"][:,::N_part]
+            self.r = np.sqrt(self.y**2 + self.z**2)
+            self.pr = (self.y*self.py + self.z*self.pz)/self.r
+    
+            self.Lx_track =  self.y*self.pz - self.z*self.py
+            self.theta = np.arctan2(self.z,self.y)
+            self.gamma = np.sqrt(1+self.px**2+self.py**2+self.pz**2)
+            l0 = 2*pi
+            self.compa_track_radial_distrib_im = self.ax4_track.scatter(self.r[0]/l0, self.Lx_track[-1],s=1,label=f"{self.sim_directory_name}")
+            self.canvas_4_track.draw()
+            
+            try:
+                T0 = self.compa_S.TrackParticles(track_name, axes=["x","y","z","py","pz","px"])
+            except Exception:
+                utils.Popup().showError("No TrackParticles diagnostic found")
+                return
+            self.compa_track_N_tot = T0.nParticles
+            self.compa_track_t_range = T0.getTimes()
+            self.compa_track_traj = T0.getData()
+            self.compa_track_time_SLIDER.setMaximum(len(self.track_t_range)-1)
+            self.compa_track_time_SLIDER.setValue(len(self.track_t_range)-1)
+            del T0
+            N_part = int(self.compa_track_Npart_EDIT.text())
+            self.x = self.track_traj["x"][:,::N_part]
+            self.track_N = self.x.shape[1]
+            
+            if self.compa_sim_geometry == "AMcylindrical":
+                self.compa_track_r_center = 0
+            else:
+                self.compa_track_r_center = self.Ltrans/2
+            
+            self.y2 = self.track_traj["y"][:,::N_part] -self.compa_track_r_center
+            self.z2 = self.track_traj["z"][:,::N_part] -self.compa_track_r_center
+            self.py2 = self.track_traj["py"][:,::N_part]
+            self.pz2 = self.track_traj["pz"][:,::N_part]
+            self.px2 = self.track_traj["px"][:,::N_part]
+            self.r2 = np.sqrt(self.y**2 + self.z**2)
+    
+            self.Lx_track2 =  self.y2*self.pz2 - self.z2*self.py2
+            
+            self.ax4_track = self.figure_4_track.add_subplot(1,1,1)
+    
+
+            
+            self.compa_track_radial_distrib_im2 = self.ax4_track.scatter(self.r2[0]/l0, self.Lx_track2[-1],s=1,label=f"{self.compa_sim_directory_name}")
+            self.ax4_track.grid()
+            self.ax4_track.legend()
+            
+            self.canvas_4_track.draw()
+
+        if check_id == 100 or check_id==101:#SLIDER UPDATE
+            l0=2*pi
+
+            if check_id == 101:
+                time_edit = float(self.compa_track_time_EDIT.text())
+                time_idx = np.where(abs(self.compa_track_t_range/l0-time_edit)==np.min(abs(self.compa_track_t_range/l0-time_edit)))[0][0]
+                self.compa_track_time_SLIDER.setValue(time_idx)
+                self.compa_track_time_EDIT.setText(str(round(self.compa_track_t_range[time_idx]/l0,2)))
+            else:
+                time_idx = self.compa_track_time_SLIDER.sliderPosition()
+                self.compa_track_time_EDIT.setText(str(round(self.compa_track_t_range[time_idx]/l0,2)))
+
+            self.compa_track_radial_distrib_im.set_offsets(np.c_[self.r[0]/l0,self.Lx_track[time_idx]])
+            self.compa_track_radial_distrib_im2.set_offsets(np.c_[self.r2[0]/l0,self.Lx_track2[time_idx]])
+                
+            self.figure_4_track.suptitle(f"{self.sim_directory_name} vs {self.compa_sim_directory_name}: {track_name} | $t={self.track_t_range[-1]/self.l0:.2f}~t_0$ (dx=λ/{l0/self.S.namelist.dx:.0f}; a0={self.a0:.1f}; N={self.track_N/1000:.2f}k; <x0>={np.mean(self.x[0])/l0:.1f}λ)",**self.qss_plt_title)
+            self.canvas_4_track.draw()
+            
+    
+    
     def averageAM(self, X,Y,dr_av):
         M = []
         da = 0.04
@@ -3683,6 +3889,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_intensity_groupBox.hide()
             self.canvas_4_intensity.hide()
             self.canvas_4_intensity_time.hide()
+            self.compa_track_groupBox.hide()
+            self.canvas_4_track.hide()
         elif box_idx==1: #plasma
             self.compa_scalar_groupBox.hide()
             self.canvas_4_scalar.hide()
@@ -3693,6 +3901,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_intensity_groupBox.hide()
             self.canvas_4_intensity.hide()
             self.canvas_4_intensity_time.hide()
+            self.compa_track_groupBox.hide()
+            self.canvas_4_track.hide()
         elif box_idx==2: #binning
             self.compa_scalar_groupBox.hide()
             self.canvas_4_scalar.hide()
@@ -3703,7 +3913,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_intensity_groupBox.hide()
             self.canvas_4_intensity.hide()
             self.canvas_4_intensity_time.hide()
-        else: #intensity
+            self.compa_track_groupBox.hide()
+            self.canvas_4_track.hide()
+        elif box_idx==3: #intensity
             self.compa_scalar_groupBox.hide()
             self.canvas_4_scalar.hide()
             self.compa_plasma_groupBox.hide()
@@ -3712,7 +3924,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self.canvas_4_binning.hide()
             self.compa_intensity_groupBox.show()
             self.canvas_4_intensity.show()
+            self.compa_track_groupBox.hide()
+            self.canvas_4_track.hide()
             # self.canvas_4_intensity_time.show()
+        else:
+            self.compa_track_groupBox.show()
+            self.canvas_4_track.show()
+            
+            self.compa_scalar_groupBox.hide()
+            self.canvas_4_scalar.hide()
+            self.compa_plasma_groupBox.hide()
+            self.canvas_4_plasma.hide()
+            self.compa_binning_groupBox.hide()
+            self.canvas_4_binning.hide()
+            self.compa_intensity_groupBox.hide()
+            self.canvas_4_intensity.hide()
         return
 
 
@@ -4186,7 +4412,6 @@ class MainWindow(QtWidgets.QMainWindow):
         prc_exact = size/(total_size_du_b)*100
         prc = round(prc_exact)
         
-        
         self.download_prc_hist_dict[sim_id].append(prc_exact) #append prc to download hist
         
         layout = self.layout_progress_bar_dict[str(sim_id)]
@@ -4306,6 +4531,20 @@ class MainWindow(QtWidgets.QMainWindow):
         sim_name_LABEL.setStyleSheet("background-color: lightblue")
         sim_name_LABEL.setWordWrap(True)
         a0, Tp, w0, dx, description = sim_params
+        
+        sim_name_prop_dict = self.get_sim_name_properties(sim_name)
+        a0_name, Tp_name = sim_name_prop_dict["a"], sim_name_prop_dict["Tp"], 
+        
+        if sim_name_prop_dict["dx"] is not None: #if dx is not in the name of the sim
+            dx_name = self.l0/sim_name_prop_dict["dx"]
+            dx_neg_cond = (dx_name != dx)
+        else:
+            dx_neg_cond = False
+        
+        if (a0_name != a0) or (Tp_name*self.l0 != Tp) or dx_neg_cond:
+            sim_name_LABEL.setStyleSheet("background-color: red")
+
+        
         l0=2*pi
         sim_name_LABEL.setToolTip(f"a0={a0}; Tp={Tp/l0:.0f}; w0={w0/l0:.1f}; dx={l0/dx:.0f}\n{description}")
         # sim_name_LABEL.setAlignment(QtCore.Qt.AlignCenter)
@@ -4435,6 +4674,25 @@ class MainWindow(QtWidgets.QMainWindow):
         return C_lp/self.w(z)**3 * exp(-(r/self.w(z))**2) * (r/self.w(z))**(abs(self.l1)-1) * (-2*r**2+self.w(z)**2*abs(self.l1))
     def f_squared_prime(self,r,z):
         return 2*self.w0**2/(self.w(z)**2*r) * self.f(r,z)**2*(abs(self.l1)-2*(r/self.w0)**2+ 4*(z**2/self.w0**4))
+
+    def get_sim_name_properties(self, sim_name):
+        patterns = {
+         "a": r"a(\d+)",
+         "Tp": r"Tp(\d+)",
+         "dx": r"dx(\d+)"
+         }
+        results = {}
+        for key, pattern in patterns.items():
+            match = re.search(pattern, sim_name)
+            if match:
+                results[key] = int(match.group(1))
+            else:
+                results[key] = None
+                # None if the key is not found in the string
+                
+        return results
+        
+
 class ProxyStyle(QtWidgets.QProxyStyle):
     """Overwrite the QSlider: left click place the cursor at cursor position"""
     def styleHint(self, hint, opt=None, widget=None, returnData=None):

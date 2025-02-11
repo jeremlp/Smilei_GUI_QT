@@ -24,15 +24,15 @@ import time
 from tqdm import tqdm
 plt.close("all")
 
-a0_requested = 2
+a0_requested = 3
 
-sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12",
-                "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12",
-                "SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp12",
+sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8",
+                "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12_dx128_AM8",
+                "SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp12_dx128_AM8",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a2.33_Tp12_dx48",
-                "SIM_OPTICAL_GAUSSIAN/gauss_a2.5_Tp12",
-                "SIM_OPTICAL_GAUSSIAN/gauss_a3_Tp12_dx48",
-                "SIM_OPTICAL_GAUSSIAN/gauss_a4_Tp12_dx48"]
+                "SIM_OPTICAL_GAUSSIAN/gauss_a2.5_Tp12_dx128_AM8",
+                "SIM_OPTICAL_GAUSSIAN/gauss_a3_Tp12_dx128_AM8",
+                "SIM_OPTICAL_GAUSSIAN/gauss_a4_Tp12_dx128_AM8"]
 
 a0_range_12 = np.array([0.1,1,2,2.33,2.5,3,4])
 
@@ -48,7 +48,7 @@ S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/gauss_a2_Tp6_NET_GAIN_dx64')
 
 l0=2*np.pi
-T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px"])
+T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
 
 Ltrans = S.namelist.Ltrans
 Tp = S.namelist.Tp
@@ -66,10 +66,13 @@ print(f"RESOLUTION: l0/{l0/S.namelist.dx}")
 
 N_part = 1
 # r_range_net = S.namelist.r_range_net
-
+if "AM" in sim_path:
+    track_r_center = 0
+else:
+    track_r_center = Ltrans/2
 x = track_traj["x"][:,::N_part]
-y = track_traj["y"][:,::N_part]-Ltrans/2
-z = track_traj["z"][:,::N_part] -Ltrans/2
+y = track_traj["y"][:,::N_part] - track_r_center
+z = track_traj["z"][:,::N_part] - track_r_center
 py = track_traj["py"][:,::N_part]
 pz = track_traj["pz"][:,::N_part]
 px = track_traj["px"][:,::N_part]
@@ -109,19 +112,8 @@ def averageAM(X,Y,dr_av):
     t1 = time.perf_counter()
     print(f"...{(t1-t0):.0f} s")
     return a_range,av_Lx, std_Lx
-# def averageModified(X,Y,dr_av):
-#     t0 = time.perf_counter()
-#     print("Computing average...")
-#     a_range = r_range_net
-#     M = np.empty(a_range.shape)
-#     STD = np.empty(a_range.shape)
-#     for i,a in enumerate(a_range):
-#         mask = (X > a-dr_av/2) & (X < a+dr_av/2)
-#         M[i] = np.nanmean(Y[mask])
-#         STD[i] = np.std(Y[mask])/np.sqrt(len(Y[mask]))
-#     t1 = time.perf_counter()
-#     print(f"...{(t1-t0):.0f} s")
-#     return a_range,M, STD
+
+
 
 def w(z):
     zR = 0.5*w0**2
@@ -184,7 +176,16 @@ def Ftheta_V2_O5(r,theta,z):
     
     expression = numerator / denominator
     return expression
-
+def Torque_V2_O5(r,theta,z):
+    """ Torque = r*Ftheta (r^2 appear instead of r) """
+    numerator = ( 2 * a0**2 * r**2 * w0**6 * np.exp(-2 * r**2 * w0**2 / (w0**4 + 4 * z**2)) *
+        (2 * z * np.cos(2 * theta) * ( 4 * r**4 - 4 * r**2 * (w0**4 + 4 * w0**2 - 4 * z**2) +
+                (w0**4 + 4 * z**2) * (w0**4 + 12 * w0**2 + 4 * z**2 + 24)) +
+            np.sin(2 * theta) * (  4 * r**6 - 4 * r**4 * (w0**4 + 7 * w0**2 - 4 * z**2) +
+                r**2 * ( 8 * (w0**4 + 4 * w0**2 + 20) * z**2 + (w0**4 + 16 * w0**2 + 56) * w0**4 + 16 * z**4) -
+                (w0**4 + 4 * z**2) * ( 4 * (w0**2 - 2) * z**2 + (w0**2 + 4) * (w0**2 + 6) * w0**2  ))))
+    denominator = (w0**4 + 4 * z**2)**5
+    return numerator / denominator
 
 
 
@@ -241,7 +242,7 @@ def dr_Relat_mean(r,t,x):
 def dr_Relat(r,t,x):
     return -1/(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
 
-def dr(r,t,x):
+def dr(r,t,x0):
     return -1/sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
 
 #==================================================
@@ -283,7 +284,7 @@ def Lx4_distrib_mean(dr_func, dtheta_func, dx_func, N=10_000):
     temp_env = gauss(t_range_lx,x_pos)
     mean_Lx_list = []
     std_Lx_list = []
-    r_range = np.linspace(1*l0,2*l0,5)
+    r_range = np.linspace(1*l0,w0/sqrt(2),25)
     for r0 in tqdm(r_range):
         # t0 = time.perf_counter()
         Lx_theta_list = []
@@ -297,19 +298,68 @@ def Lx4_distrib_mean(dr_func, dtheta_func, dx_func, N=10_000):
         # print(f"{r0/r_range[-1]*100:.0f}% - time theta av: {(t1-t0):.2f}s (sqrt(N)={sqrt(len(Lx_theta_list)):.2f})")
     return np.array(r_range),np.array(mean_Lx_list), np.array(std_Lx_list)
 
-def Lx_distrib_FullMotion():
+
+def Lx4_distrib_mean_FULL_MOTION(N=10_000):
+    # t_range_smooth = np.arange(0,t_range[-1],1)
+    t_range_lx = t_range#np.arange(0,t_range[-1],dt)
+    temp_env = gauss(t_range_lx,x[:,Nid])
+    mean_Lx_list = []
+    std_Lx_list = []
+    r_range = np.linspace(1*l0,w0/sqrt(2),25)
+    for r0 in tqdm(r_range):
+        # t0 = time.perf_counter()
+        Lx_theta_list = []
+        for theta0 in np.linspace(0,2*np.pi,N):
+            LxR_distrib = integrate.simpson(Torque_V2_O3(r0, theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
+            Lx_theta_list.append(LxR_distrib)
+        mean_Lx_list.append(np.nanmean(Lx_theta_list))
+        # print(sqrt(len(Lx_theta_list)))
+        std_Lx_list.append(np.std(Lx_theta_list)/sqrt(len(Lx_theta_list)))
+        # t1 = time.perf_counter()
+        # print(f"{r0/r_range[-1]*100:.0f}% - time theta av: {(t1-t0):.2f}s (sqrt(N)={sqrt(len(Lx_theta_list)):.2f})")
+    return np.array(r_range),np.array(mean_Lx_list), np.array(std_Lx_list)
+
+
+def Lx4_distrib_max_FULL_MOTION(N=10_000):
+    # t_range_smooth = np.arange(0,t_range[-1],1)
+    t_range_lx = t_range#np.arange(0,t_range[-1],dt)
+    max_Lx_list = []
+    min_Lx_list = []
+    Lx_theta_list = []
+
+    for Nid in tqdm(range(x.shape[-1]//4)):
+        temp_env = gauss(t_range_lx,x[:,Nid])
+
+        # t0 = time.perf_counter()
+        LxR_distrib = integrate.simpson(Torque_V2_O3(r[0,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
+        Lx_theta_list.append(LxR_distrib)
+        max_Lx_list.append(np.nanmax(Lx_theta_list))
+        min_Lx_list.append(np.nanmin(Lx_theta_list))
+
+        # print(f"{r0/r_range[-1]*100:.0f}% - time theta av: {(t1-t0):.2f}s (sqrt(N)={sqrt(len(Lx_theta_list)):.2f})")
+    return np.array(r_range),np.array(min_Lx_list),np.array(max_Lx_list),Lx_theta_list
+
+def Lx_distrib_FullMotion_NOR_FV2O5():
     t_range_lx = t_range#np.arange(0,t_range[-1],dt)
     distrib_r_list = []
     distrib_Lx_list = []
-    for Nid in range(len(x[0])):
-        temp_env = gauss(t_range,x[:,Nid])
-        LxR_distrib = integrate.simpson(1/gamma[:,Nid] * r[:,Nid] * Ftheta_V2_O3(r[:,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
+    for Nid in tqdm(range(len(x[0])//4)):
+        temp_env = gauss(t_range,x[0,Nid])
+        LxR_distrib = integrate.simpson(Torque_V2_O5(r[0,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
         distrib_Lx_list.append(LxR_distrib)
         distrib_r_list.append(r[0,Nid])
     return np.array(distrib_r_list),np.array(distrib_Lx_list)
 
-
-
+def Lx_distrib_FullMotion_FV2O5():
+    t_range_lx = t_range#np.arange(0,t_range[-1],dt)
+    distrib_r_list = []
+    distrib_Lx_list = []
+    for Nid in tqdm(range(len(x[0])//4)):
+        temp_env = gauss(t_range,x[0,Nid])
+        LxR_distrib = integrate.simpson(Torque_V2_O5(r[:,Nid], theta[:,Nid], x[:,Nid])*temp_env**2, x=t_range_lx)
+        distrib_Lx_list.append(LxR_distrib)
+        distrib_r_list.append(r[0,Nid])
+    return np.array(distrib_r_list),np.array(distrib_Lx_list)
 
 
 def dx_func(r,t,x):
@@ -319,13 +369,13 @@ def dx_func(r,t,x):
 def dtheta_func(r,theta,t,x):
     """ possible 1/r missing for theta velocity"""
     gamma = sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)
-    return 1/gamma*Ftheta_V2_O3(r,theta,x) * gauss2_int_int(t, x)
+    return 1/gamma * 1/r * Ftheta_V2_O3(r,theta,x) * gauss2_int_int(t, x)
     
 
-plt.figure()
-plt.plot(t_range/l0, theta[:,Nid],".-")
-plt.plot(t_range_smooth/l0, theta0 + dtheta_func(r0,theta0,t_range_smooth,x0))
-plt.grid()
+# plt.figure()
+# plt.plot(t_range/l0, theta[:,Nid],".-")
+# plt.plot(t_range_smooth/l0, theta0 + dtheta_func(r0,theta0,t_range_smooth,x0))
+# plt.grid()
 
 
 
@@ -361,15 +411,14 @@ plt.grid()
 
 
 
-wolframe_table_path = r"C:\Users\Jeremy\_LULI_\_STAGE_LULI_\MATHEMATICA_TABLES\table_LG_LZ4_mymodel_w2.5_a2.332.txt"
-table = np.loadtxt(wolframe_table_path)
-y_range_table = np.arange(-1.75*w0, 1.75*w0+l0/128, l0/128)
-Y_table, Z_table = np.meshgrid(y_range_table,y_range_table)
-R_table = sqrt(Y_table**2+Z_table**2).ravel()
-a_range_table, av_Lx_table, std_Lx_table = averageAM(R_table, table, 0.5)
+# wolframe_table_path = r"C:\Users\Jeremy\_LULI_\_STAGE_LULI_\MATHEMATICA_TABLES\table_LG_LZ4_mymodel_w2.5_a2.332.txt"
+# table = np.loadtxt(wolframe_table_path)
+# y_range_table = np.arange(-1.75*w0, 1.75*w0+l0/128, l0/128)
+# Y_table, Z_table = np.meshgrid(y_range_table,y_range_table)
+# R_table = sqrt(Y_table**2+Z_table**2).ravel()
+# a_range_table, av_Lx_table, std_Lx_table = averageAM(R_table, table, 0.5)
 
 
-plt.figure()
 # plt.plot(a_range_table/l0,av_Lx_table,"k--")
 
 # a_range, mean_Lx, std_Lx = averageModified(r[0],Lx_track[-1],dr_av = 0.1)
@@ -395,25 +444,77 @@ plt.figure()
 #                                                dx_func, N=50_000)
 # COEF2 = sqrt(1+(f(r_range2+dr(r_range2,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range2+dr(r_range2,1.25*Tp+x0,x0),5*l0)*a0)**4)
 
-
+"""
 r_range3, mean_Lx3, std_Lx3 = Lx4_distrib_mean(lambda r,t,x:0,
-                                               dtheta_func, 
-                                               dx_func, N=100_000)
-COEF3 = sqrt(1+(f(r_range3+dr(r_range3,1.25*Tp+x0,5*l0),x0)*a0)**2+ 1/4*(f(r_range3+dr(r_range3,1.25*Tp+x0,x0),5*l0)*a0)**4)
+                                                dtheta_func, 
+                                                dx_func, N=50_000)
+COEF3 = sqrt(1+(f(r_range3,x0)*a0)**2+ 1/4*(f(r_range3,x0)*a0)**4)
+"""
+plt.figure()
+
+# r_range, min_Lx,max_Lx = Lx4_distrib_max_FULL_MOTION(N=25)
+
+# plt.plot(r_range/l0, sqrt(1+(f(r_range,x0)*a0)**2+ 1/4*(f(r_range,x0)*a0)**4)*min_Lx,"C0.-")
+# plt.plot(r_range/l0, sqrt(1+(f(r_range,x0)*a0)**2+ 1/4*(f(r_range,x0)*a0)**4)*max_Lx,"C0.-")
+# plt.grid()
 
 
+Lx_max_model = np.max(LxEpolar_V2_O5(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
+COEF = sqrt(1+(a0*f(r_range,x0))**2+ 1/4*(a0*f(r_range,x0))**4)
+plt.plot(r_range/l0,COEF*Lx_max_model,"k-", lw=2)
+plt.plot(r_range/l0,-COEF*Lx_max_model,"k-", lw=2, label="Model $\gamma$$L_z^{NR}$")
+
+    
+    
+r_range_FM, Lx_FM = Lx_distrib_FullMotion_NOR_FV2O5()
+a_range, min_Lx_FM, max_Lx_FM = min_max(r_range_FM,Lx_FM)
+
+COEF_FM = sqrt(1+(a0*f(a_range,x0))**2+ 1/4*(a0*f(a_range,x0))**4)
+
+plt.plot(a_range/l0,COEF_FM*min_Lx_FM,"C0-",label="Lx FM ($\Delta \Theta$, \Delta x$)")
+plt.plot(a_range/l0,COEF_FM*max_Lx_FM,"C0-")
+
+a_range, mean_Lx_FM, std_Lx_FM = averageAM(r_range_FM, Lx_FM,1)
+COEF_FM2 = sqrt(1+(a0*f(a_range,x0))**2+ 1/4*(a0*f(a_range,x0))**4)
+
+plt.plot(a_range/l0, COEF_FM2*mean_Lx_FM*10, "r.-")
+
+
+
+
+r_range_FM, Lx_FM = Lx_distrib_FullMotion_FV2O5()
+a_range, min_Lx_FM, max_Lx_FM = min_max(r_range_FM,Lx_FM)
+
+COEF_FM = sqrt(1+(a0*f(a_range,x0))**2+ 1/4*(a0*f(a_range,x0))**4)
+
+plt.plot(a_range/l0,COEF_FM*min_Lx_FM,"C1-",label="Lx FM ($\Delta \r, \Delta \Theta$, \Delta x$)")
+plt.plot(a_range/l0,COEF_FM*max_Lx_FM,"C1-")
+
+a_range, mean_Lx_FM, std_Lx_FM = averageAM(r_range_FM, Lx_FM,1)
+COEF_FM2 = sqrt(1+(a0*f(a_range,x0))**2+ 1/4*(a0*f(a_range,x0))**4)
+
+plt.plot(a_range/l0, COEF_FM2*mean_Lx_FM*10, "C3.-")
+
+plt.grid()
+plt.legend()
+
+"""
+r_range3, mean_Lx3, std_Lx3 = Lx4_distrib_mean_FULL_MOTION(N=50_000)
+COEF3 = sqrt(1+(f(r_range3,x0)*a0)**2+ 1/4*(f(r_range3,x0)*a0)**4)
+"""
 # r_range4, mean_Lx4, std_Lx4 = Lx4_distrib_mean(lambda r,t,x:0,
 #                                                dtheta_func, 
 #                                                dx_func, N=200_000)
 # r_range5, mean_Lx5, std_Lx5 = Lx4_distrib_mean(lambda r,t,x:0,
 #                                                dtheta_func, 
 #                                                dx_func, N=600_000)
-
+azeaezazeeaz
+plt.figure()
 
 # plt.plot(r_range0/l0,mean_Lx0,"k-",lw=2,label="Model <$L_x$> (0, 0, 0)")
 # plt.plot(r_range1/l0,mean_Lx1,"C0-",lw=2,label="Model <$L_x$> (0, 0, $\Delta x$)")
-plt.plot(r_range2/l0,mean_Lx2,"C1-",lw=2,label="Model 50k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
-plt.plot(r_range3/l0,mean_Lx3,"C2--",lw=2,label="Model 100k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
+# plt.plot(r_range2/l0,mean_Lx2,"C1-",lw=2,label="Model 50k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
+plt.plot(r_range3/l0,COEF3*mean_Lx3,"C2.-",lw=2,label="Model 50k $\gamma$<$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
 # plt.plot(r_range4/l0,mean_Lx4,"C3--",lw=2,label="Model 200k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
 # plt.plot(r_range5/l0,mean_Lx5,"C3--",lw=2,label="Model 600k <$L_x$> (0, $\Delta \Theta$, $\Delta x$)")
 
@@ -421,7 +522,7 @@ plt.plot(r_range3/l0,mean_Lx3,"C2--",lw=2,label="Model 100k <$L_x$> (0, $\Delta 
 # plt.fill_between(r_range3/l0, COEF*(mean_Lx3-std_Lx3/2), COEF*(mean_Lx3+std_Lx3/2), alpha=0.25, color="C2")
 # plt.fill_between(r_range3/l0, COEF*(mean_Lx3-std_Lx3/2), COEF*(mean_Lx3+std_Lx3/2), alpha=0.25, color="C2")
 
-plt.ylim(bottom=0)
+# plt.ylim(bottom=0)
 plt.grid()
 plt.legend()
 plt.xlabel("$r_0/\lambda$")

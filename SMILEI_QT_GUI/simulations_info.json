@@ -1,21 +1,21 @@
 {
-    "51469": {
-        "job_id": "51469",
-        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_NET_GAIN/gauss_a3_Tp12_NET_GAIN_dx256_AM4",
-        "job_full_name": "gauss_a3_Tp12_NET_GAIN_dx256_AM4.sh",
+    "52324": {
+        "job_id": "52324",
+        "job_full_path": "/grid_mnt/sps3/jeremy/LULI/SIM_NET_GAIN/gauss_a1_Tp6_NET_GAIN_dx64_EGOR",
+        "job_full_name": "gauss_a1_Tp6_NET_GAIN_dx64_EGOR.sh",
         "NODES": "20",
-        "progress": 0.2833488235581862,
-        "ETA": "6h25",
-        "expected_time": "19h20",
-        "push_time": 109406,
-        "diag_id": 47859,
+        "progress": 0.5909496874069664,
+        "ETA": "11h07",
+        "expected_time": "20h44",
+        "push_time": 3099302,
+        "diag_id": 25889,
         "sim_params": [
-            3.0,
-            75.39822368615503,
-            15.707963267948966,
-            0.02454369260617026,
-            "AMC convergence for net gain"
+            1.0,
+            37.69911184307752,
+            10.0,
+            0.09817477042468103,
+            "2 co-propagating LG beams (l=1, m=3) for Dmitriev"
         ]
     },
-    "datetime": "09/01 - 12h55"
+    "datetime": "11/02 - 09h37"
 }

@@ -46,7 +46,8 @@ def open_folder(path):
             nodes = "NA"
         
         dic['DIAG_ID'] = diag_id
-        dic['RUN_TIME'] = run_time_format
+        dic['RUN_TIME_FORMAT'] = run_time_format
+        dic['RUN_TIME_VALUE'] = run_time
         dic['NODES'] = nodes
     
     return dic
@@ -80,6 +81,9 @@ class TreeDialog(QMainWindow):
         self.matplotlib_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         self.diag_color_map = {}
         self.color_index = 0  # To track the color index
+        self.sum_run_time = 0
+        self.sum_run_time_CPU = 0
+        self.nb_simulations = 0
     
     
         self.tree = QTreeWidget()
@@ -136,20 +140,24 @@ class TreeDialog(QMainWindow):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.tree)
         central_widget.setLayout(layout)
+        print(f"Number of simulations on disk: {self.nb_simulations}")
+        print(f"Sum of run time on disk: {(self.sum_run_time/60)//60:.0f}h{(self.sum_run_time/60)%60:0>2.0f}")
+        print(f"Sum of run time CPU on disk: {(self.sum_run_time_CPU/60)//60:.0f}h{(self.sum_run_time_CPU/60)%60:0>2.0f}")
 
         # self.setCentralWidget(self.tree)
         
     def populate_tree(self,data, parent=None):
-
+        
         for key, value in data.items():
             if isinstance(value, dict):# If the value is a dictionary
                 diag_id = value.get('DIAG_ID', "")
-                run_time = value.get('RUN_TIME', "")
+                run_time_format = value.get('RUN_TIME_FORMAT', "")
+                run_time = value.get('RUN_TIME_VALUE', "")
                 nodes = value.get('NODES', "")
-                item = QTreeWidgetItem([key,str(diag_id), str(run_time), str(nodes)])
+                item = QTreeWidgetItem([key,str(diag_id), str(run_time_format), str(nodes)])
 
                 if diag_id not in self.diag_color_map and diag_id != '':
-                    self.diag_color_map[diag_id] = QtGui.QColor(self.matplotlib_colors[self.color_index])
+                    self.diag_color_map[diag_id] = QtGui.QColor(self.matplotlib_colors[self.color_index%len(self.matplotlib_colors)])
                     self.color_index += 1   # Cycle through colors
                 if diag_id !='':
                     item.setForeground(1, self.diag_color_map[diag_id])
@@ -165,7 +173,10 @@ class TreeDialog(QMainWindow):
                     parent.addChild(item)
                     font = QtGui.QFont()
                     font.setBold(True)  # Set the font to bold for simulation items
-                    parent.setFont(0, font) 
+                    parent.setFont(0, font)
+                    self.sum_run_time += run_time
+                    self.sum_run_time_CPU += run_time*(nodes*48)
+                    self.nb_simulations += 1
                 
                 self.populate_tree(value, item)
             else:
