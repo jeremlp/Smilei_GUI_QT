@@ -2772,7 +2772,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.figure_4_intensity.tight_layout()
             self.canvas_4_intensity.draw()
             
-            empirical_corr = 0.98 # To compensate for other effect on top of dis
+            empirical_corr = 0.98 # To compensate for other effect on top of dispersion
             groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) # Formula: vg = c^2k/sqrt(wp^2+c^2k^2)
             laser_x_pos_range = np.max([groupe_velocity*self.intensity_t_range-self.Tp/2,self.intensity_t_range*0],axis=0)          
             self.intensity_data_time = np.empty((self.intensity_data.shape[0],self.intensity_data.shape[2]))
@@ -2789,6 +2789,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     xcut_idx_compa = xcut_idx
                 self.intensity_data_time[t] = self.intensity_data[t,xcut_idx,:,self.intensity_trans_mid_idx]
                 self.intensity_data_time_compa[t] = self.intensity_data_compa[t,xcut_idx_compa,:,self.intensity_trans_mid_idx]
+            
             self.compa_intensity_im_1time = self.ax4_intensity_1time.imshow(self.intensity_data_time.T, cmap="jet",aspect="auto",
                                                                             extent=self.intensity_extentTY,vmax=max_intensity_vmax)
             self.compa_intensity_im_2time = self.ax4_intensity_2time.imshow(self.intensity_data_time_compa.T, cmap="jet",aspect="auto",
@@ -2900,12 +2901,17 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 xcut_idx = self.compa_intensity_xcut_SLIDER.sliderPosition()
                 self.compa_intensity_xcut_EDIT.setText(str(round(self.intensity_paxisX[xcut_idx]/l0,2)))
-            
+            max_intensity = np.max(self.intensity_data[:,:,:,self.intensity_trans_mid_idx],axis=(1,2))
+            max_intensity_compa = np.max(self.intensity_data_compa[:,:,:,self.intensity_trans_mid_idx],axis=(1,2))
             if self.compa_intensity_follow_laser_CHECK.isChecked():
-                empirical_corr = 0.98 #to compensate for other effect on top of dis
-                groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) #c^2k/sqrt(wp^2+c^2k^2)
-                laser_x_pos = max(groupe_velocity*self.intensity_t_range[time_idx]-self.Tp/2,0)
-                xcut_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0]
+                # empirical_corr = 0.98 #to compensate for other effect on top of dis
+                # groupe_velocity = empirical_corr*1/np.sqrt(self.ne+1) #c^2k/sqrt(wp^2+c^2k^2)
+                # laser_x_pos = max(groupe_velocity*self.intensity_t_range[time_idx]-self.Tp/2,0)
+                # xcut_idx = np.where(np.abs(self.intensity_paxisX-laser_x_pos) == np.min(np.abs(self.intensity_paxisX-laser_x_pos)))[0][0]
+                
+                xcut_idx = np.where(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx]==max_intensity[time_idx])[0][0] #Use maximum intensity
+                xcut_idx_compa = np.where(self.intensity_data_compa[time_idx,:,:,self.intensity_trans_mid_idx]==max_intensity_compa[time_idx])[0][0] #Use maximum intensity
+                
                 self.compa_intensity_xcut_SLIDER.setValue(xcut_idx)
             
             self.compa_intensity_im_1a.set_data(self.intensity_data[time_idx,:,:,self.intensity_trans_mid_idx].T)
@@ -2913,7 +2919,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.compa_intensity_im_2a.set_data(self.intensity_data_compa[time_idx,:,:,self.intensity_trans_mid_idx].T)
             self.compa_intensity_im_2b.set_data(self.intensity_data_compa[time_idx,xcut_idx,:,:])
             self.compa_intensity_line_x1.set_xdata(self.intensity_paxisX[xcut_idx]/l0)
-            self.compa_intensity_line_x2.set_xdata(self.intensity_paxisX[xcut_idx]/l0)
+            self.compa_intensity_line_x2.set_xdata(self.intensity_paxisX[xcut_idx_compa]/l0)
             self.circle_max_compa_intensity1.set_radius(self.waist_max_intensity[xcut_idx]/l0)
             self.circle_max_compa_intensity2.set_radius(self.waist_max_intensity_compa[xcut_idx]/l0)
 
@@ -3254,6 +3260,7 @@ class MainWindow(QtWidgets.QMainWindow):
             track_name = self.track_file_BOX.currentText()
             app.processEvents()
             try:
+                print("Open 1st track comparison")
                 T0 = self.S.TrackParticles(track_name, axes=["x","y","z","py","pz","px"])
             except Exception:
                 utils.Popup().showError("No TrackParticles diagnostic found")
@@ -3285,10 +3292,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.theta = np.arctan2(self.z,self.y)
             self.gamma = np.sqrt(1+self.px**2+self.py**2+self.pz**2)
             l0 = 2*pi
+            
+            # self.ax4_track = self.figure_4_track.add_subplot(1,1,1)
+
             self.compa_track_radial_distrib_im = self.ax4_track.scatter(self.r[0]/l0, self.Lx_track[-1],s=1,label=f"{self.sim_directory_name}")
+            print("draw 1st track comparison")
             self.canvas_4_track.draw()
             
             try:
+                print("Open 2nd track comparison")
                 T0 = self.compa_S.TrackParticles(track_name, axes=["x","y","z","py","pz","px"])
             except Exception:
                 utils.Popup().showError("No TrackParticles diagnostic found")
@@ -3317,15 +3329,13 @@ class MainWindow(QtWidgets.QMainWindow):
     
             self.Lx_track2 =  self.y2*self.pz2 - self.z2*self.py2
             
-            self.ax4_track = self.figure_4_track.add_subplot(1,1,1)
-    
-
-            
+                
             self.compa_track_radial_distrib_im2 = self.ax4_track.scatter(self.r2[0]/l0, self.Lx_track2[-1],s=1,label=f"{self.compa_sim_directory_name}")
             self.ax4_track.grid()
             self.ax4_track.legend()
             
             self.canvas_4_track.draw()
+            print("draw 1st track comparison")
 
         if check_id == 100 or check_id==101:#SLIDER UPDATE
             l0=2*pi

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb  5 09:34:57 2025
+Created on Tue Feb 18 11:10:33 2025
 
 @author: Jeremy
 """
+
 
 import numpy as np
 
@@ -68,16 +69,13 @@ def w(z):
 def f(r,z):
     return (r*sqrt(2)/w(z))**abs(l1)*np.exp(-(r/w(z))**2)
 
-sim_loc_list_12 = ["gauss_a2.5_Tp12_NET_GAIN_dx64_AM4",
-                    "gauss_a3_Tp12_NET_GAIN_dx64_AM4",
-                    "gauss_a3.3_Tp12_NET_GAIN_dx64_AM4",
-                    "gauss_a3.5_Tp12_NET_GAIN_dx64_AM4",
-                    "gauss_a4_Tp12_NET_GAIN_dx64_AM4",
-                    "gauss_a4.5_Tp12_NET_GAIN_dx64_AM4",
-                    "gauss_a5_Tp12_NET_GAIN_dx64_AM4"]
+sim_loc_list_12 = ["gauss_a3_Tp12_NET_GAIN_dx256_AM8",
+                    "gauss_a3_Tp12_NET_GAIN_PHASE4_dx64_AM4",
+                    "gauss_a3_Tp12_NET_GAIN_PHASE2_dx64_AM4",
+                    ]
 
 
-a0_range = np.array([2.5, 3, 3.3, 3.5, 4, 4.5, 5])
+phase = np.array(["$\phi=0$","$\phi=\pi/4$","$\phi=\pi/2$"])
 
 Tp_requested = 12
 
@@ -101,7 +99,7 @@ l1 = S.namelist.l1
 
 mean_arr = []
 k=0
-for sim in sim_loc_list:
+for i,sim in enumerate(sim_loc_list):
     
     try: 
         data = np.loadtxt(f"{os.environ['SMILEI_QT']}/data/net_gain_smilei/net_gain_{sim}.txt")
@@ -163,52 +161,14 @@ for sim in sim_loc_list:
         mean_Lx = mean_Lx[:-4]
         std_Lx = std_Lx[:-4]
     
-    
+    plt.plot(a_range/l0, mean_Lx,".-",label=phase[i])
+
     mean_arr.append(np.max(np.abs(mean_Lx)))
     k+=1
 
-fig, ax = plt.subplots(1)
-
-plt.loglog(a0_range, mean_arr,"o",ms=12)
-
-ax.set_xlabel("$a_0$", fontsize=16)
-ax.grid()
-ax.set_title(f"Average $<L_x>$ scaling with $a_0$\n($T_p={Tp/l0:.0f}\lambda/c,w_0=2.5\lambda$)")
-# ax2.set_title(f"Mean <Lx> (normalized) radial distribution\n($Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
-ax.set_ylabel("$<L_x>$", fontsize=16)
-
-a,b = np.polyfit(np.log10(a0_range)[:-2], np.log10(mean_arr)[:-2],1)
-print(a,b)
-plt.loglog(a0_range, 10**(a*np.log10(a0_range)+b),"--",label=f"fit $a_0$^{a:.2f}")
-
-
-data = np.loadtxt(f"{os.environ['SMILEI_QT']}/data/net_gain_model/scaling_a0_V1_Tp12_theta_x_50000.txt")
-a_range_model, mean_Lx_model = data[:,0], data[:,1]
-COEF = sqrt(1+(f(1.5*l0,5*l0)*a_range_model)**2 + 1/4*(f(1.5*l0,5*l0)*a_range_model)**4)
-plt.loglog(a_range_model, mean_Lx_model,".-",label="Model Max $<L_x>$")
-plt.loglog(a_range_model, COEF*mean_Lx_model,"-",label="Model Max $\gamma_{max}<L_x>$")
-# plt.loglog(a_range_model, (1+(f(1.5*l0,5*l0)*a_range_model)**2+(f(1.5*l0,5*l0)*a_range_model)**4/4+(f(1.5*l0,5*l0)*a_range_model)**6/16)*mean_Lx_model,".-",label="Model Max $\gamma_{max}^2<L_x>$")
-
-plt.xlim(2,6)
-plt.ylim(3e-4,6)
-plt.legend()
-fig.tight_layout()
-plt.pause(0.1)
-plt.axhline(0,ls="--",color="k")
-fig.tight_layout()
-
-
-
-
-
-plt.figure()
-for a0 in [2,2.5,3,3.3,3.5,4,4.5,5]:
-    sim = f"gauss_a{a0}_Tp12_NET_GAIN_dx64_AM4"
-    data = np.loadtxt(f"{os.environ['SMILEI_QT']}/data/net_gain_smilei/net_gain_{sim}.txt")
-    a_range, mean_Lx, std_Lx = data[:,0], data[:,1], data[:,2]
-    plt.plot(a_range/l0,mean_Lx,".-",label=f"a0={a0}")
-
 plt.grid()
 plt.legend()
-plt.xlabel("$r/\lambda$",fontsize=12)
+plt.xlabel("$r_0/\lambda$",fontsize=12)
 plt.ylabel("$<L_x>$",fontsize=12)
+plt.tight_layout()
+plt.title("Net gain $<L_x>$ for different laser starting phase")

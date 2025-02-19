@@ -38,7 +38,9 @@ w0 = 2.5*l0
 x_pos = 5*l0
 base_path = f'{os.environ["SMILEI_CLUSTER"]}/SIM_OPTICAL_NFF/'
 
-sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_Gaussian_a2_Tp6_w2.5","nff_SuperGaussian_a2_Tp6_w2.5",'gauss_a2_Tp6','gauss_a2_Tp12']
+sim_list = ["nff_sin2_a2_Tp6_w2.5","nff_Gaussian_a2_Tp6_w2.5",
+            "nff_SuperGaussian_a2_Tp6_w2.5", "gauss_a1_Tp6_NET_GAIN_dx64_EGOR"
+            'gauss_a2_Tp6','gauss_a2_Tp12']
 
 
 
@@ -73,10 +75,12 @@ Ey_AMC128 = np.array(S4.Probe("fields","Ey").getData())
 S5 = happi.Open(base_path+"nff_sin2_a2_Tp6_AMC_dx64")
 Ey_AMC64 = np.array(S5.Probe("fields","Ey").getData())
 
+S6 = happi.Open(base_path+"nff_sin2_a2_Tp6_w2.5_M4")
+Ey_M4 = np.array(S6.Probe("fields","Ey").getData())
 
 
 fig = plt.figure(figsize=(12,6))
-ax1,ax2,ax3,ax4 = fig.subplots(4,1)
+ax1,ax2,ax3,ax4,ax5 = fig.subplots(5,1)
 
 VMAX = 5e-7
 
@@ -98,8 +102,14 @@ ax3.set_ylabel("$y/\lambda$")
 im4=ax4.imshow(Ey_AMC128[time,:,:,mid_idx].T,extent=extent,cmap="RdBu",aspect="auto",vmin=-VMAX,vmax=VMAX)
 fig.colorbar(im4,ax=ax4,pad=0.01)
 ax4.set_title("AMC dx=$\lambda/128$ AM=8")
-ax4.set_xlabel("$x/\lambda$")
+# ax4.set_xlabel("$x/\lambda$")
 ax4.set_ylabel("$y/\lambda$")
+
+im5=ax5.imshow(Ey_M4[time,:,:,mid_idx].T,extent=extent,cmap="RdBu",aspect="auto",vmin=-VMAX,vmax=VMAX)
+fig.colorbar(im5,ax=ax5,pad=0.01)
+ax5.set_title("M4")
+ax5.set_xlabel("$x/\lambda$")
+ax5.set_ylabel("$y/\lambda$")
 
 t_range = S1.Probe("fields","Ey").getTimes()
 ax1.axvline(t_range[time]/l0,ls="--",color="g",lw=2)
@@ -113,6 +123,9 @@ ax3.axvline(t_range[time]/l0-Tp/l0,ls="--",color="g",lw=2)
 t_range = S4.Probe("fields","Ey").getTimes()
 ax4.axvline(t_range[time]/l0,ls="--",color="g",lw=2)
 ax4.axvline(t_range[time]/l0-Tp/l0,ls="--",color="g",lw=2)
+t_range = S6.Probe("fields","Ey").getTimes()
+ax5.axvline(t_range[time]/l0,ls="--",color="g",lw=2)
+ax5.axvline(t_range[time]/l0-Tp/l0,ls="--",color="g",lw=2)
 
 fig.suptitle("Transverse field E_y for different Maxwell Solver")
 # ax1.set_xlim(12,18)
