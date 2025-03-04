@@ -9,7 +9,7 @@ import os
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 from scipy.optimize import curve_fit
@@ -164,6 +164,8 @@ for a0 in a0_range_smooth[:]:
     # Lx_max_model_list_12_GAMMA_perp.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,Tint)))
 
     Lx_max_model_list_12_O5_GAMMA.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2 + 1/4*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,Tint)))
+    # Lx_max_model_list_12_O5_GAMMA.append(np.max(LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,Tint)))
+
     # Lx_max_model_list_12_O5_GAMMA_MEAN.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2/2 + 1/16*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
     
     
@@ -217,11 +219,11 @@ plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA,
 
 r1 = w0*sqrt(2* (2 - sqrt(2)))/2
 expr_rmin = (np.sqrt(2) - 1) * np.exp(np.sqrt(2) - 2) * (a0_range_smooth**2 * Tint / w0**2)
-COEF = sqrt(1+(a0_range_smooth*f(r1,0))**2+ 1/4*(a0_range_smooth*f(r1,0))**4)
-plt.plot(a0_range_smooth,COEF*expr_rmin,"C4--",label="Analytical $L_{x,max}$ with $\gamma_{max}(x=0)$")
+# COEF = sqrt(1+(a0_range_smooth*f(r1,0))**2+ 1/4*(a0_range_smooth*f(r1,0))**4)
+# plt.plot(a0_range_smooth,COEF*expr_rmin,"C4--",label="Analytical $L_{x,max}$ with $\gamma_{max}(x=0)$")
 
 COEF = sqrt(1+(a0_range_smooth*f(r1,x0))**2+ 1/4*(a0_range_smooth*f(r1,x0))**4)
-plt.plot(a0_range_smooth,COEF*expr_rmin,"C2--",label="Analytical $L_{x,max}$ with $\gamma_{max}(x=x_0)$")
+plt.plot(a0_range_smooth,COEF*expr_rmin,"C2--",label="Analytical $L_{x,max}$")
 
 
 

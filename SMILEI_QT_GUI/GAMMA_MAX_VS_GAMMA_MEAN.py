@@ -12,7 +12,7 @@ import numpy as np
 from numpy import exp, sin, cos, arctan2, pi, sqrt
 
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 import math

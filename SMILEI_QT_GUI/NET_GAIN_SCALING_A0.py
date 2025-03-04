@@ -156,8 +156,6 @@ for sim in sim_loc_list:
         a_range, mean_Lx, std_Lx = averageModified(r[0],Lx_track[-1],dr_av = 0.1)
         np.savetxt(f"{os.environ['SMILEI_QT']}/data/net_gain_smilei/net_gain_{sim}.txt",np.column_stack((a_range, mean_Lx,std_Lx)))
 
-    
-
     if a0 > 4:
         a_range = a_range[:-4]
         mean_Lx = mean_Lx[:-4]
@@ -181,8 +179,7 @@ a,b = np.polyfit(np.log10(a0_range)[:-2], np.log10(mean_arr)[:-2],1)
 print(a,b)
 plt.loglog(a0_range, 10**(a*np.log10(a0_range)+b),"--",label=f"fit $a_0$^{a:.2f}")
 
-
-data = np.loadtxt(f"{os.environ['SMILEI_QT']}/data/net_gain_model/scaling_a0_V1_Tp12_theta_x_50000.txt")
+data = np.loadtxt(f"{os.environ['SMILEI_QT']}/data/net_gain_model/scaling_a0_VthetaR_Tp12_r_theta_x_10000.txt")
 a_range_model, mean_Lx_model = data[:,0], data[:,1]
 COEF = sqrt(1+(f(1.5*l0,5*l0)*a_range_model)**2 + 1/4*(f(1.5*l0,5*l0)*a_range_model)**4)
 plt.loglog(a_range_model, mean_Lx_model,".-",label="Model Max $<L_x>$")

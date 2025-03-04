@@ -11,6 +11,8 @@ import matplotlib.patches as patches
 dt = 0.1
 Size = 10
 Window = 200
+
+
 def update(POS, OLD_POS):
     POS,OLD_POS = updatePositions(POS, OLD_POS)
     POS,OLD_POS = applyConstraint(POS, OLD_POS)
@@ -93,7 +95,7 @@ for _ in range(N):
     circle = patches.Circle((np.random.uniform(1, Window), np.random.uniform(1, Window)), Size, fc='C0',ec="k")
     ax.add_patch(circle)
     circles.append(circle)
-    plt.grid()
+plt.grid()
 plt.xlim(0,Window)
 plt.ylim(0,Window)
 plt.pause(0.9)

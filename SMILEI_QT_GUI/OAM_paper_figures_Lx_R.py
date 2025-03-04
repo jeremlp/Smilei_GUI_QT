@@ -12,7 +12,7 @@ import numpy as np
 from numpy import exp, sin, cos, arctan2, pi, sqrt
 
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 import math
@@ -191,58 +191,64 @@ fig, axs = plt.subplots(2,len(sim_loc_list_12)//2, figsize=(10,5))
 
 
 for k,sim_path in enumerate(sim_loc_list_12[:]):
-
     S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
-    
-    ax = axs.ravel()[k]
-    print(k)
-    
-    
-    T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
-    
     Ltrans = S.namelist.Ltrans
     Tp = S.namelist.Tp
     w0 = S.namelist.w0
     a0 = S.namelist.a0
     l1 = S.namelist.l1
     dx = S.namelist.dx
-    
-    track_N_tot = T0.nParticles
-    t_range = T0.getTimes()
-    t_range_smooth = np.arange(0,t_range[-1],0.01)
-    track_traj = T0.getData()
-    
-    print(f"RESOLUTION: l0/{l0/S.namelist.dx}")
-    
-    N_part = 1
-    
-    if "AM" in sim_path:
-        dx_string = f"dx={l0/dx:.0f} AM={S.namelist.number_AM_modes}"
-    
-        track_r_center = 0
-    else:
-        dx_string = f"dx={l0/dx:.0f}"
-        track_r_center = Ltrans/2
-    
-    x = track_traj["x"][:,::N_part]
-    y = track_traj["y"][:,::N_part]-track_r_center
-    z = track_traj["z"][:,::N_part] -track_r_center
-    py = track_traj["py"][:,::N_part]
-    pz = track_traj["pz"][:,::N_part]
-    px = track_traj["px"][:,::N_part]
-    
-    
-    r = np.sqrt(y**2+z**2)
-    theta = np.arctan2(z,y)
-    pr = (y*py + z*pz)/r
-    Lx_track =  y*pz - z*py
-    gamma = sqrt(1+px**2+py**2+pz**2)
-    vx = px/gamma
-    
-    tmax = 120
+    t_range_smooth = np.arange(10*l0,45*l0,0.1)
+
+    try:
+        data = np.loadtxt(f"{os.environ['SMILEI_QT']}/data/shape_smilei/shape_{sim_path.split('/')[-1]}.txt")
+        a_range,lower_Lx, upper_Lx = data[:,0], data[:,1], data[:,2]
+
+    except:      
+        
+        T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
+                
+        track_N_tot = T0.nParticles
+        t_range = T0.getTimes()
+        track_traj = T0.getData()
+        
+        print(f"RESOLUTION: l0/{l0/S.namelist.dx}")
+        
+        N_part = 1
+        
+        if "AM" in sim_path:
+            dx_string = f"dx={l0/dx:.0f} AM={S.namelist.number_AM_modes}"
+        
+            track_r_center = 0
+        else:
+            dx_string = f"dx={l0/dx:.0f}"
+            track_r_center = Ltrans/2
+        
+        x = track_traj["x"][:,::N_part]
+        y = track_traj["y"][:,::N_part]-track_r_center
+        z = track_traj["z"][:,::N_part] -track_r_center
+        py = track_traj["py"][:,::N_part]
+        pz = track_traj["pz"][:,::N_part]
+        px = track_traj["px"][:,::N_part]
+        
+        
+        r = np.sqrt(y**2+z**2)
+        theta = np.arctan2(z,y)
+        pr = (y*py + z*pz)/r
+        Lx_track =  y*pz - z*py
+        gamma = sqrt(1+px**2+py**2+pz**2)
+        vx = px/gamma
+        
+        tmax = 120
     
 
-    a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[max_time[k]])
+        a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[max_time[k]])
+        np.savetxt(f"{os.environ['SMILEI_QT']}/data/shape_smilei/shape_{sim_path.split('/')[-1]}.txt", np.c_[a_range,lower_Lx, upper_Lx])
+
+        
+        
+    ax = axs.ravel()[k]
+    print(k)
     ax.fill_between(a_range/l0, lower_Lx, upper_Lx,color="lightblue")
     ax.plot(a_range/l0,lower_Lx,"C0",lw=2)
     ax.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei")

@@ -13,7 +13,7 @@ import numpy as np
 from numpy import exp, sin, cos, arctan2, pi, sqrt
 
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 import math
@@ -49,7 +49,7 @@ S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/{sim_path}')
 # S = happi.Open(f'{os.environ["SMILEI_CLUSTER"]}/SIM_NET_GAIN/gauss_a3_Tp12_NET_GAIN_dx128_AM4')
 
 l0=2*np.pi
-T0 = S.TrackParticles("track_eon_full", axes=["x","y","z","py","pz","px"])
+T0 = S.TrackParticles("track_eon", axes=["x","y","z","py","pz","px"])
 
 Ltrans = S.namelist.Ltrans
 Tp = S.namelist.Tp
@@ -308,13 +308,13 @@ def Lx4_distrib_mean(coord, N=50_000):
     temp_env = gauss(t_range_lx,x_pos)
     mean_Lx_list = []
     std_Lx_list = []
-    r_range = np.linspace(0.1*l0,w0,25)
+    r_range = np.linspace(0.5*l0,2*l0,25)
     dr, dtheta, dx = lambda r,theta,x,t:0,lambda r,theta,x,t:0,lambda r,theta,x,t:0
 
     if "x" in coord:
         dx = dx_func
     if "theta" in coord:
-        dtheta = dtheta_func    
+        dtheta = dtheta_func_NT    
     if "r" in coord:
         dr = dr_func
     
@@ -322,7 +322,9 @@ def Lx4_distrib_mean(coord, N=50_000):
         # t0 = time.perf_counter()
         Lx_theta_list = []
         for theta0 in np.linspace(0,2*np.pi,N):
-            LxR_distrib = integrate.simpson(Torque_V2_O3(np.abs(r0+dr(r0,theta0,x0,t_range_lx)), theta0+dtheta(r0,theta0,x0,t_range_lx), x0+dx(r0,theta0,x0,t_range_lx))*temp_env**2, x=t_range_lx)
+            LxR_distrib = integrate.simpson(Torque_V2_O5(np.abs(r0+dr(r0,theta0,x0,t_range_lx)), 
+                                                         theta0+dtheta(r0,theta0,x0,t_range_lx), 
+                                                         x0+dx(r0,theta0,x0,t_range_lx))*temp_env**2, x=t_range_lx)
             Lx_theta_list.append(LxR_distrib)
         mean_Lx_list.append(np.nanmean(Lx_theta_list))
         # print(sqrt(len(Lx_theta_list)))
@@ -336,15 +338,31 @@ def Lx4_distrib_mean(coord, N=50_000):
 def dx_func(r,theta,x,t):
     """ use 1/gamma ?"""
     gamma = sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)
-    return a0**2/4 * f(r,x)**2 * gauss2_int(t,x)
+    return a0**2/4 * f(r,x)**2 * gauss2_int(t,x) #/gamma
 
 def dtheta_func(r,theta,x,t):
     """ possible 1/r missing for theta velocity"""
     gamma = sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)
     return 1/gamma * 1/r * Ftheta_V2_O5(r,theta,x) * gauss2_int_int(t, x)
-    
+
+def dtheta_func_NT(r0,theta0,x0,t):
+    r_model = np.abs(r0 + dr_func(r0,theta0,x0, t))
+    x_model = x0 +dx_func(r0, theta0, x0, t)
+
+    idx_cross = np.where(r_model==np.min(r_model))[0][0]
+    theta0_m = np.zeros_like(r_model) + theta0
+    theta0_m[idx_cross:] = pi+theta0_m[idx_cross:] #Allow model to cross beam axis and switch theta
+
+    y_model = r_model*cos(theta0_m) + a0*f(r_model,x0)*gauss(t,x_model)*cos(l1*theta0_m  - t + x_model)
+    z_model = r_model*sin(theta0_m)
+    theta_model = np.arctan2(z_model, y_model) + dtheta_func(r0, theta0_m, x_model, t)
+    return theta_model - theta0
+
+
 def dr_func(r,theta,x,t):
     return dr_Relat_mean(r, t, x)
+
+
 
 """
 r_range3, mean_Lx3, std_Lx3 = Lx4_distrib_mean(lambda r,t,x:0,
@@ -353,7 +371,7 @@ r_range3, mean_Lx3, std_Lx3 = Lx4_distrib_mean(lambda r,t,x:0,
 COEF3 = sqrt(1+(f(r_range3,x0)*a0)**2+ 1/4*(f(r_range3,x0)*a0)**4)
 """
 
-SAVE = True
+SAVE = False
 # LOAD = False
 
 
@@ -390,6 +408,7 @@ SAVE = True
 coords_var = "r_theta"
 N = 10_000
 try:
+    aez
     data = np.loadtxt(rf"{os.environ['SMILEI_QT']}\data\net_gain_model\net_gain_model_{coords_var}_{N}_a{a0:.1f}.txt")
     r_range_Model, mean_Lx_Model, std_Lx_Model = data[:,0], data[:,1], data[:,2]
 except:
@@ -397,13 +416,14 @@ except:
     if SAVE:  np.savetxt(rf"{os.environ['SMILEI_QT']}\data\net_gain_model\net_gain_model_{coords_var}_{N}_a{a0}.txt", np.column_stack((r_range_Model, mean_Lx_Model,std_Lx_Model)))
 
 COEF_Model = sqrt(1+(a0*f(r_range_Model,x0))**2+ 1/4*(a0*f(r_range_Model,x0))**4)
-plt.plot(r_range_Model/l0, COEF_Model*mean_Lx_Model, "C4-",label=coords_var)
+plt.plot(r_range_Model/l0, COEF_Model*mean_Lx_Model, "C1-",label=coords_var)
 # plt.fill_between(r_range_Model/l0,COEF_Model*(mean_Lx_Model-2*std_Lx_Model),COEF_Model*(mean_Lx_Model+2*std_Lx_Model),color="C4",alpha=0.1)
 plt.pause(0.1)
 
 coords_var = "theta_x"
 N = 10_000
 try:
+    aze
     data = np.loadtxt(rf"{os.environ['SMILEI_QT']}\data\net_gain_model\net_gain_model_{coords_var}_{N}_a{a0:.1f}.txt")
     r_range_Model, mean_Lx_Model, std_Lx_Model = data[:,0], data[:,1], data[:,2]
 except:
@@ -411,10 +431,15 @@ except:
     if SAVE:  np.savetxt(rf"{os.environ['SMILEI_QT']}\data\net_gain_model\net_gain_model_{coords_var}_{N}_a{a0:.1f}.txt", np.column_stack((r_range_Model, mean_Lx_Model,std_Lx_Model)))
 
 COEF_Model = sqrt(1+(a0*f(r_range_Model,x0))**2+ 1/4*(a0*f(r_range_Model,x0))**4)
-plt.plot(r_range_Model/l0, COEF_Model*mean_Lx_Model, "C5-",label=coords_var)
+plt.plot(r_range_Model/l0, COEF_Model*mean_Lx_Model, "C2-",label=coords_var)
 # plt.fill_between(r_range_Model/l0,COEF_Model*(mean_Lx_Model-2*std_Lx_Model),COEF_Model*(mean_Lx_Model+2*std_Lx_Model),color="C5",alpha=0.1)
 plt.pause(0.1)
+plt.grid()
+plt.legend()
+plt.title("Net gain $<L_x^R>$ model")
+plt.tight_layout()
 
+eazaezaez
 
 
 def Lx4_distrib_GAMMA(coord):
@@ -464,23 +489,6 @@ mean_max_modelS = np.mean([min_Lx_model,max_Lx_model],axis=0)
 plt.plot(d_r_list/l0,mean_max_modelS,"C3")
 
 
-plt.legend()
-plt.grid()
-
-# r_range_Model, mean_Lx_Model, std_Lx_Model = Lx4_distrib_mean("r theta x",N=50_000)
-# COEF_Model = sqrt(1+(a0*f(r_range_Model,x0))**2+ 1/4*(a0*f(r_range_Model,x0))**4)
-# plt.plot(r_range_Model/l0, COEF_Model*mean_Lx_Model, "r-",label="r theta x")
-# plt.fill_between(COEF_Model*(mean_Lx_Model-2*std_Lx_Model),COEF_Model*(mean_Lx_Model+2*std_Lx_Model),color="r",alpha=0.2)
-# plt.pause(0.1)
-
-
-# a_range, min_Lx_FM, max_Lx_FM = min_max(r_range_FM,Lx_FM)
-
-# COEF_FM = sqrt(1+(a0*f(a_range,x0))**2+ 1/4*(a0*f(a_range,x0))**4)
-
-# plt.plot(a_range/l0,COEF_FM*min_Lx_FM,"k-",label="Lx FM ($\Delta \Theta$, \Delta x$)")
-# plt.plot(a_range/l0,COEF_FM*max_Lx_FM,"k-")
-
 plt.xlabel("$r_0/\lambda$")
 plt.title(f"Net gain $<L_x>$ from model ($a_0={a0}$, $T_p={Tp/l0:.2f}\lambda/c$)")
 
@@ -491,7 +499,7 @@ plt.xlim(0,2)
 plt.grid()
 plt.legend()
 
-
+azeazeazeza
 
 def getE(r,theta,z,t):
     

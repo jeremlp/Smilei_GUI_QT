@@ -418,3 +418,96 @@ class ThreadGetAMIntegral(QtCore.QThread):
     def run(self):
         AM_full_int = self.getAMIntegral(self.S)
         self.finished.emit(AM_full_int)
+        
+        
+        
+class ThreadUpdateVerlet(QtCore.QThread):
+    def __init__(self,  POS, OLD_POS, SIZES, MOUSE_POS, parent=None):
+        super(QtCore.QThread, self).__init__()
+        self.POS = POS
+        self.OLD_POS = OLD_POS
+        self.SIZES = SIZES
+        self.MOUSE_POS = MOUSE_POS
+        self.dt = 0.1
+        self.Window = 200
+        self.Size = 10
+        self.gravity_acc = np.array([0,-60])
+
+    finished = pyqtSignal(np.ndarray)
+    
+
+    def update(self, POS, OLD_POS):
+        # t0 = time.perf_counter()
+        POS,OLD_POS = self.updatePositions(POS, OLD_POS)
+        POS,OLD_POS = self.applyConstraint(POS, OLD_POS)
+        POS = self.applyCollision(POS)
+        # t1 = time.perf_counter()
+        # print((t1-t0)*1000,"ms")
+        return POS,OLD_POS
+    
+    def updatePositions(self, POS,OLD_POS):
+        
+        for i in range(len(POS)):
+            pos, old_pos = POS[i], OLD_POS[i]
+            POS[i], OLD_POS[i] = self.updateSinglePos(pos, old_pos)
+        
+        return POS, OLD_POS
+            
+        
+    def updateSinglePos(self, pos, old_pos):
+        vel = pos - old_pos
+        old_pos = pos
+        
+        total_acc = self.getAcc(pos)
+    
+        pos += vel + total_acc*self.dt**2
+        return pos, old_pos
+    
+    def getAcc(self,pos):
+        direction = pos - self.MOUSE_POS
+        distance = np.linalg.norm(direction) + 0.1  # Avoid division by zero
+        force = 10000 / (distance**(1.5))  # Inverse square law
+        mouse_acc = np.array([0,0])
+        if distance < self.Window / 3:
+                mouse_acc = (direction / distance) * force  # Normalize and apply force
+        
+        # print(mouse_acc)
+        return self.gravity_acc + mouse_acc
+        
+    
+    def applyConstraint(self, POS, OLD_POS):
+        # print(POS)
+        for i in range(len(POS)):
+            new_pos = POS[i]
+            # print("Check bounce:",new_pos)
+            if new_pos[1] - self.SIZES[i] < 0.2: #Bounce on ground
+                # print("BOUNCE ON GROUND")
+                new_pos = np.array([new_pos[0],self.SIZES[i]])
+            
+            if new_pos[0] - self.SIZES[i] < 0.2: #left wall
+                new_pos = np.array([self.SIZES[i],new_pos[1]])
+            if new_pos[0] + self.SIZES[i] > self.Window-0.2: #right wall
+                new_pos = np.array([self.Window-self.SIZES[i],new_pos[1]])
+            POS[i] = new_pos
+        return POS, OLD_POS
+    
+    def applyCollision(self, POS):
+        # print(POS)
+        for i in range(len(POS)):
+            pos1 = POS[i]
+            for j in range(len(POS)):
+                if i==j: continue
+                pos2 = POS[j]
+                axis = pos1-pos2
+                dist = np.sqrt(axis[0]**2+axis[1]**2)
+                if ((dist < (self.SIZES[i]+self.SIZES[j])) & (dist>0.001)):
+                    u = axis/dist
+                    delta = (self.SIZES[i]+self.SIZES[j]) - dist
+                    coef = 1#0.5 #viscosity
+                    POS[i] += 0.5*delta*u*coef
+                    POS[j] -= 0.5*delta*u*coef
+        return POS
+
+    def run(self):
+        POS,OLD_POS = self.update(self.POS,self.OLD_POS)
+        self.finished.emit(np.array([POS,OLD_POS]))

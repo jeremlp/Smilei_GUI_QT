@@ -156,9 +156,6 @@ def dr_func(r,theta,x,t):
     return dr_Relat_mean(r, t, x)
 
 
-
-
-
 def getE(r,theta,z,t):
     
     tau = t-z
@@ -180,6 +177,7 @@ theta_range = np.arange(0,2*pi,pi/64)
 r_range = np.arange(0,2*w0,0.1)
 x_range = np.arange(0,15*l0,0.1)
 y_range = np.arange(-2*w0,2*w0,0.1)
+t_range_s = np.arange(0,15*l0,0.1)
 extent1 = [x_range[0]/l0, x_range[-1]/l0,theta_range[0]/(2*pi)*360, theta_range[-1]/(2*pi)*360]
 extent2 = [r_range[0]/l0, r_range[-1]/l0, x_range[0]/l0, x_range[-1]/l0]
 extent3 = [r_range[0]/l0, r_range[-1]/l0, theta_range[0]/(2*pi)*360, theta_range[-1]/(2*pi)*360]
@@ -191,25 +189,55 @@ THETA1, X1 = np.meshgrid(theta_range, x_range)
 R2, X2 = np.meshgrid(r_range, x_range)
 R3, THETA3 = np.meshgrid(r_range, theta_range)
 
+THETA4, TIME4 = np.meshgrid(theta_range, t_range_s)
+
 r1 = 1.5*l0
 Ey, Ez, Ex = getE(r1,THETA1,X1,20*l0)
 Y = r1*np.cos(THETA1)
 Z = r1*np.sin(THETA1)
-Troque = - (Y*Ez - Z*Ey)
-
-plt.imshow(Troque,cmap="RdYlBu",aspect="auto",origin="lower")
+Troque_theta_x = - (Y*Ez - Z*Ey)
+plt.figure()
+plt.imshow(Troque_theta_x,cmap="RdYlBu",aspect="auto",origin="lower")
 plt.colorbar()
+plt.xlabel("$\Theta$")
+plt.ylabel("$x/\lambda$")
+plt.title("Torque from Lorentz force $E_\Theta$($\Theta,x$)")
 
+r1 = 1.5*l0
+Ey, Ez, Ex = getE(r1,THETA4,5*l0,TIME4)
+Y = r1*np.cos(THETA4)
+Z = r1*np.sin(THETA4)
+Troque_theta_t = - (Y*Ez - Z*Ey)
+plt.figure()
+plt.imshow(Troque_theta_t,cmap="RdYlBu",aspect="auto",origin="lower")
+plt.colorbar()
+plt.xlabel("$\Theta$")
+plt.ylabel("$t/(c\lambda)$")
+plt.title("Torque from Lorentz force $E_\Theta$($\Theta,t$)")
+
+
+r1 = 1.5*l0
+Ey, Ez, Ex = getE(r1,THETA4,5*l0+0.5*TIME4,TIME4)
+Y = r1*np.cos(THETA4)
+Z = r1*np.sin(THETA4)
+Troque_theta_t = - (Y*Ez - Z*Ey)
+plt.figure()
+plt.imshow(Troque_theta_t,cmap="RdYlBu",aspect="auto",origin="lower")
+plt.colorbar()
+plt.xlabel("$\Theta$")
+plt.ylabel("$t/(c\lambda)$")
+plt.title("Torque from Lorentz force $E_\Theta$($\Theta,t,x=0.2*c$)")
 
 def Lorentz_net_gain(coord):
     dr, dtheta, dx = lambda r,theta,x,t:0,lambda r,theta,x,t:0,lambda r,theta,x,t:0
 
     dr = dr_func
     dx = dx_func
+    dtheta = dtheta_func
     max_Lx = []
     min_Lx = []
     mean_Lx = []
-    r_range = np.arange(0.*w0,1.75*w0,0.1)
+    r_range = np.arange(0.5*l0,2*w0,0.1)
     temp_env = gauss(t_range,x0)
     for r0 in tqdm(r_range):
         Lx_theta_list = []
@@ -242,7 +270,7 @@ plt.grid()
 plt.xlabel("$r/\lambda$")
 plt.ylabel("$L_x$")
 plt.title("L_x(r) from Azimuthal electric field")
-plt.xlim(0,2)
+# plt.xlim(0,2)
 
 
 
@@ -294,3 +322,18 @@ plt.grid()
 
 plt.title("Lx of 2 electrons at different r")
 
+plt.figure()
+
+t_cross_list = []
+r0_range = np.arange(1*l0,1.7*l0,0.001)
+for r0 in r0_range:
+    dr = r0+dr_func(r0,0,5*l0,t_range)
+
+    t_cross = t_range[np.where(dr<=-0.6*r0)[0][0]]
+    t_cross_list.append(t_cross)
+
+plt.plot(r0_range/l0,np.cos(np.array(t_cross_list)),".-")
+plt.grid()
+plt.xlabel("$r_0/\lambda$")
+plt.ylabel("$\cos(t_c)$")
+plt.title("Phase $\propto \cos(t_c)$")

@@ -7,7 +7,7 @@ Created on Fri Sep  6 18:54:10 2024
 import sys
 from sys import getsizeof
 import os
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 
@@ -25,6 +25,8 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
 import time
 import gc
 import psutil
@@ -1194,21 +1196,85 @@ class MainWindow(QtWidgets.QMainWindow):
         settings_width = self.settings_groupBox.geometry().width()
         window_width = self.geometry().width()
         logo_width = window_width-settings_width
-        self.SMILEI_ICON_LABEL = QtGui.QIcon(os.environ["SMILEI_QT"]+"\\Ressources\\smilei_gui_svg_v3.png") #CUSTOM GUI LOGO
-
-        self.smilei_icon_BUTTON = QtWidgets.QPushButton(self.programm_TABS)
+        
+        # Create a Matplotlib figure and canvas
+        self.figure_verlet = Figure()
+        self.canvas_verlet = FigureCanvas(self.figure_verlet)
+        self.ax_verlet = self.figure_verlet.add_subplot(1, 1, 1)
+        self.ax_verlet.set_axis_off()
+        # self.ax_verlet.grid()
+        
+        #Smilei Logo as Button + matplotlib figure for Verlet mini-game
+        smilei_icon_path = os.environ["SMILEI_QT"] + "\\Ressources\\smilei_gui_svg_v3.png"
+        self.SMILEI_ICON_LABEL = QtGui.QIcon(smilei_icon_path)
+        self.verlet_container = QtWidgets.QWidget(self)
+        self.smilei_icon_BUTTON = QtWidgets.QPushButton(self.verlet_container)
         self.smilei_icon_BUTTON.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.smilei_icon_BUTTON.setIcon(self.SMILEI_ICON_LABEL)
-        self.smilei_icon_BUTTON.setIconSize(QtCore.QSize(int(logo_width/1.5),int(logo_width*3/8/1.5))) # 800 x 300
-        # self.smilei_icon_BUTTON.setIconSize(QtCore.QSize(10,10)) # 800 x 300
+        self.smilei_icon_BUTTON.setIconSize(QtCore.QSize(300, 300))  # Adjust as needed
+        self.smilei_icon_BUTTON.setStyleSheet("QPushButton { border: none; background: transparent; }")
+        self.smilei_icon_BUTTON.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
+        
+        # Used QStackedLayout to overlay the button on top of the figure
+        stackedLayout = QtWidgets.QStackedLayout(self.verlet_container)
+        stackedLayout.addWidget(self.canvas_verlet)  
+        stackedLayout.addWidget(self.smilei_icon_BUTTON) 
+        stackedLayout.setStackingMode(QtWidgets.QStackedLayout.StackAll)  
+        
+        self.N_verlet_circles = 50
 
-        self.smilei_icon_BUTTON.setStyleSheet("QPushButton { border: none; }")
+        self.verlet_window = 200
+        self.verlet_size = 10
+        self.verlet_circles = []
+        self.verlet_POS = np.zeros((self.N_verlet_circles,2))
+        
+        self.verlet_spawn_circle = True
+        self.verlet_circles_colors = ["#646464","#0672ba","#7ecdff","#c5dcea"]
+        self.verlet_circles_size = []
+        
+        for i in range(self.N_verlet_circles):
+            circle_size = np.random.randint(3,14)
+            x0,y0 = np.random.uniform(1, self.verlet_window), np.random.uniform(1, self.verlet_window)
+            circle = patches.Circle((x0, y0), 
+                                    circle_size, fc=np.random.choice(self.verlet_circles_colors),ec="k")
+            self.verlet_POS[i] = [x0,y0]
+            self.verlet_circles_size.append(circle_size)
+            self.ax_verlet.add_patch(circle)
+            self.verlet_circles.append(circle)
+        self.verlet_OLD_POS = self.verlet_POS
 
-        # self.smilei_icon_BUTTON.setGeometry(int((self.programm_TABS.width()-100)/2), int((self.programm_TABS.height()-100)/2) , 100, 100)
+        self.ax_verlet.set_xlim(0,self.verlet_window)
+        self.ax_verlet.set_ylim(0,self.verlet_window)
+        
+        verlet_refresh_time_s = 0.05 #s
+        self.verlet_update_TIMER = QtCore.QTimer()
+        
+        self.verlet_mouse_pos = np.array([self.verlet_window/2,self.verlet_window])
+        self.canvas_verlet.mpl_connect("motion_notify_event", self.onMouseMoveVerlet)
+        
+        self.verlet_update_interval = 20 #ms
+        self.verlet_spawn_interval = 2000 #ms
+        self.verlet_update_TIMER.setInterval(self.verlet_update_interval) #in ms
+        self.verlet_update_TIMER.timeout.connect(self.call_ThreadUpdateVerlet)
+        # self.verlet_update_TIMER.start()
+        
+        self.verlet_spawn_TIMER = QtCore.QTimer()
+        self.verlet_spawn_TIMER.setInterval(self.verlet_spawn_interval) #in ms
+        self.verlet_spawn_TIMER.timeout.connect(self.onVerletSpawn)
+        # self.verlet_spawn_TIMER.start()
+        self.is_verlet_timer_active = False
+        self.figure_verlet.tight_layout()
 
-        layoutSmileiLogo = QtWidgets.QHBoxLayout()
-        layoutSmileiLogo.addWidget(self.smilei_icon_BUTTON)
-        self.programm_TABS.setLayout(layoutSmileiLogo)
+        
+        # Set main layout
+        mainLayout = QtWidgets.QVBoxLayout(self)
+        mainLayout.addWidget(self.verlet_container)
+        self.programm_TABS.setLayout(mainLayout)
+        
+        # Ensure the button is always on top
+        self.smilei_icon_BUTTON.raise_()
+
+        # self.programm_TABS.setLayout(layout)
 
         layoutBottom = QtWidgets.QHBoxLayout()
         layoutBottom.setSizeConstraint(QtWidgets.QLayout.SetFixedSize)
@@ -1769,7 +1835,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.onRemovePlasma()
         # print(self.programm_TABS.count())
         if self.programm_TABS.count() ==0:
-            self.smilei_icon_BUTTON.show()
+            self.verlet_container.show()
         return
 
     def onMenuTabs(self, tab_name):
@@ -1778,13 +1844,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "SCALAR":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveScalar()
             else:
                 self.programm_TABS.addTab(self.scalar_Widget,"SCALAR")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 # self.smilei_icon_BUTTON.deleteLater()
                 self.INIT_tabScalar = True
                 app.processEvents()
@@ -1795,13 +1861,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "FIELDS":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveFields()
             else:
                 self.programm_TABS.addTab(self.fields_Widget,"FIELDS")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 self.INIT_tabFields = True
                 app.processEvents()
                 self.onUpdateTabFields(0)
@@ -1811,13 +1877,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "INTENSITY":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveIntensity()
             else:
                 self.programm_TABS.addTab(self.intensity_Widget,"INTENSITY")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 self.INIT_tabIntensity = True
                 app.processEvents()
                 self.onUpdateTabIntensity(0)
@@ -1827,13 +1893,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "TRACK":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveTrack()
             else:
                 self.programm_TABS.addTab(self.track_Widget,"TRACK")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 if self.INIT_tabTrack != None: self.INIT_tabTrack = True
                 self.INIT_tabTrack = True
                 app.processEvents()
@@ -1845,10 +1911,10 @@ class MainWindow(QtWidgets.QMainWindow):
                     if self.programm_TABS.tabText(currentIndex) == "PLASMA":
                         self.programm_TABS.removeTab(currentIndex)
                         print(self.programm_TABS.count)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemovePlasma()
             else:
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 self.programm_TABS.addTab(self.plasma_Widget,"PLASMA")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
@@ -1863,13 +1929,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "COMPA":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveCompa()
             else:
                 self.programm_TABS.addTab(self.compa_Widget,"COMPA")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 if self.INIT_tabCompa != None: self.INIT_tabCompa = True
                 self.INIT_tabCompa = True
                 app.processEvents()
@@ -1880,13 +1946,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "BINNING":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveBinning()
             else:
                 self.programm_TABS.addTab(self.binning_Widget,"BINNING")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 # if self.INIT_tabCompa != None: self.INIT_tabCompa = True
                 # self.INIT_tabCompa = True
                 app.processEvents()
@@ -1897,13 +1963,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 for currentIndex in range(self.programm_TABS.count()):
                     if self.programm_TABS.tabText(currentIndex) == "TORNADO":
                         self.programm_TABS.removeTab(currentIndex)
-                        if self.programm_TABS.count() ==0: self.smilei_icon_BUTTON.show()
+                        if self.programm_TABS.count() ==0: self.verlet_container.show()
                         self.onRemoveTornado()
             else:
                 self.programm_TABS.addTab(self.tornado_Widget,"TORNADO")
                 self.programm_TABS.setCurrentIndex(self.programm_TABS.count()-1)
                 self.programm_TABS.show()
-                self.smilei_icon_BUTTON.hide()
+                self.verlet_container.hide()
                 app.processEvents()
                 self.onInitTabTornado()
                 # self.loadthread = ThreadDownloadSimJSON("/sps3/jeremy/LULI/simulations_info.json", os.environ["SMILEI_QT"])
@@ -4550,8 +4616,14 @@ class MainWindow(QtWidgets.QMainWindow):
             dx_neg_cond = (dx_name != dx)
         else:
             dx_neg_cond = False
+            
+        if sim_name_prop_dict["Tp"] is not None: #if dx is not in the name of the sim
+            Tp_name = sim_name_prop_dict["Tp"]
+            Tp_neg_cond = (round(Tp_name*self.l0,2) != round(Tp,2))
+        else:
+            Tp_neg_cond = False
         
-        if (a0_name != a0) or (Tp_name*self.l0 != Tp) or dx_neg_cond:
+        if (a0_name != a0) or Tp_neg_cond or dx_neg_cond:
             sim_name_LABEL.setStyleSheet("background-color: red")
 
         
@@ -4599,6 +4671,68 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layoutProgressBar.setContentsMargins(25,20,25,20) #left top right bottom
         return layoutProgressBar
+
+
+    def call_ThreadUpdateVerlet(self):
+              
+        # print(" == call_ThreadUpdateVerlet == ")
+        # print("CALL:",self.verlet_POS.shape)
+        self.loadthread = class_threading.ThreadUpdateVerlet(self.verlet_POS,self.verlet_OLD_POS,self.verlet_circles_size, self.verlet_mouse_pos)
+        self.loadthread.finished.connect(self.onUpdateVerlet)
+        self.loadthread.start()
+        return
+    
+    def onVerletSpawn(self):
+        circle_size = np.random.randint(3,5)
+        x0,y0 = np.random.uniform(0.3*self.verlet_window, 0.7*self.verlet_window), 0.8*self.verlet_window
+        circle = patches.Circle((x0, y0), 
+                                circle_size, fc=np.random.choice(self.verlet_circles_colors),ec="k")
+        
+        # print("b",self.verlet_POS.shape)
+        self.verlet_POS = np.vstack([self.verlet_POS,np.array([x0,y0])])
+        # print("a",self.verlet_POS.shape)
+        self.verlet_OLD_POS = np.vstack([self.verlet_OLD_POS,np.array([[x0,y0]])])
+        self.verlet_circles.append(circle)
+
+        self.verlet_circles_size.append(circle_size)
+        self.ax_verlet.add_patch(circle)
+        
+        # self.verlet_circles_size = self.verlet_circles_size[1:]
+        # self.verlet_circles[0].remove()
+        # self.verlet_circles = self.verlet_circles[1:]
+        # self.verlet_circles_size = self.verlet_circles_size[1:]
+        
+            
+    def onUpdateVerlet(self, POS_OLD_POS):
+        # print("-- onUpdateVerlet --")
+        self.verlet_POS, self.verlet_OLD_POS = POS_OLD_POS
+        # print("onUpdateVerlet:",self.verlet_POS.shape)
+        for i in range(len(self.verlet_POS)):
+            self.verlet_circles[i].center = self.verlet_POS[i]
+        self.canvas_verlet.draw()
+        return
+    
+    def onMouseMoveVerlet(self, event):
+        if event.xdata is not None and event.ydata is not None:
+            self.verlet_mouse_pos = np.array([event.xdata, event.ydata])
+            # print("onMouseMove:",self.verlet_mouse_pos)
+            # print(f"Mouse position in data coordinates: ({event.xdata:.2f}, {event.ydata:.2f})")
+    
+    def keyPressEvent(self, event: QtGui.QKeyEvent):
+        if event.key() == 178:  # Keycode for ²
+            if self.is_verlet_timer_active:
+                self.verlet_update_TIMER.stop()
+                self.verlet_spawn_TIMER.stop()
+                
+                print("Verlet Timer Deactivated")
+            else:
+                self.verlet_update_TIMER.start(self.verlet_update_interval)
+                self.verlet_spawn_TIMER.start(self.verlet_spawn_interval)
+                print("Verlet Timer Activated")
+
+            self.is_verlet_timer_active = not self.is_verlet_timer_active  # Toggle state
+            
+
 
 
     def creatPara(self,name, widget, adjust_label=False,fontsize=10):
