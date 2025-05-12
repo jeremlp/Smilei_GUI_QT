@@ -11,7 +11,7 @@ import numpy as np
 from numpy import exp, sin, cos, arctan2, pi, sqrt
 
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 import math
@@ -22,7 +22,7 @@ from numba import njit
 from tqdm import tqdm
 plt.close("all")
 
-a0_requested = 3
+a0_requested = 2
 
 sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12_dx128_AM8",

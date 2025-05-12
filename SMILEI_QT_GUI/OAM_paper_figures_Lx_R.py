@@ -285,8 +285,8 @@ axs.ravel()[5].set_xlabel("$r_0/\lambda$",fontsize=16)
 
 for i,ax in enumerate(axs.ravel()):
     handles, previous_labels = ax.get_legend_handles_labels()
-    new_labels = ["Smilei", "$\gammaL_x^{NR}$","$\gammaL_x^{R}$"]
-    ax.legend(loc="lower center",handles=handles, labels=new_labels,ncol=3, 
+    new_labels = ["Smilei", "$\gamma_{max} L_x^{NR}$","$\gamma_{max} L_x^{R}$"]
+    ax.legend(loc="lower center",handles=handles, labels=new_labels,ncol=1, 
               columnspacing=0.6,handlelength=1.4,fontsize=12)
     if i!=0: ax.get_legend().remove()
 

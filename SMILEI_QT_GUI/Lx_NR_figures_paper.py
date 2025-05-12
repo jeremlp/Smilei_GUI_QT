@@ -13,7 +13,7 @@ import numpy as np
 from numpy import exp, sin, cos, arctan2, pi, sqrt
 
 import matplotlib.pyplot as plt
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 import math
@@ -349,26 +349,33 @@ def fmt(x, pos):
     return r'${} \times 10^{{{}}}$'.format(a, b)
 
 # plt.colorbar(myplot, format=ticker.FuncFormatter(fmt))
+#%% Plot Radial distribution
 
 fig1 = plt.figure(figsize=(9,5))
 # plt.scatter(r[0]/l0,Lx_track[-1],s=4,alpha=1)
 a_range, lower_Lx, upper_Lx = min_max(r[0],Lx_track[-1])
 plt.fill_between(a_range/l0, lower_Lx, upper_Lx,color="lightblue")
 plt.plot(a_range/l0,lower_Lx,"C0",lw=2)
-plt.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei {a0=}")
+plt.plot(a_range/l0,upper_Lx,"C0",lw=2, label=f"Smilei")
 
 Lx_max_model = np.max(LxEpolar_V2_O5(R,THETA,x0,w0,a0,3/8*Tp),axis=0)
 COEF = sqrt(1+(a0*f(r_range,x_pos))**2+ 1/4*(a0*f(r_range,x_pos))**4)
 plt.plot(r_range/l0,Lx_max_model,"k-",lw=2)
-plt.plot(r_range/l0,-Lx_max_model,"k-", lw=2,label="Model $L_z^{NR}$")
+plt.plot(r_range/l0,-Lx_max_model,"k-", lw=2,label="Model $L_x^{NR}$")
 plt.grid()
 plt.legend()
 plt.xlabel("$r_0/\lambda$")
 plt.ylabel("$L_x$")
-plt.title(f"$L_x$ distribution comparison between Smilei and model\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
+# plt.title(f"$L_x$ distribution comparison between Smilei and model\n($a_0={a0},Tp={Tp/l0:.0f}t_0,w_0=2.5\lambda$)")
 plt.tight_layout()
+plt.xlim(0,5)
+# aezaezzea
 
-aezaezzea
+
+fig1.tight_layout()
+
+
+#%% Plot Transverse distribution
 
 dx_interp = 0.05*l0
 y_range = np.arange(-2*w0,2*w0,dx_interp)
@@ -379,21 +386,30 @@ extent = [y_range[0]/l0,y_range[-1]/l0,y_range[0]/l0,y_range[-1]/l0]
 Lx_smilei_interp = griddata(np.c_[y[0],z[0]], Lx_track[-1], (Y, Z), method='cubic')
 # Lx_smilei_interp[np.isnan(Lx_smilei_interp)] = 0.0
 
-fig2, (ax1,ax2) = plt.subplots(1,2, figsize=(10,4))
-im1 = ax1.imshow(Lx_smilei_interp, extent=extent, cmap="RdYlBu")
-fig2.colorbar(im1,ax=ax1,pad=0.01) #,format=ticker.FuncFormatter(fmt)
-ax1.set_xlabel("$y_0/\lambda$")
-ax1.set_ylabel("$z_0/\lambda$")
-ax1.set_title("Smilei $L_x$")
-
-
 Lx_NR = LxEpolar_V2_O3(R,THETA,x0,w0,a0,3/8*Tp)
 
+fig2, (ax1,ax2) = plt.subplots(1,2, figsize=(10,4))
+im1 = ax1.imshow(Lx_smilei_interp, extent=extent, cmap="RdYlBu")
 im2 = ax2.imshow(Lx_NR, extent=extent, cmap="RdYlBu")
-fig2.colorbar(im2, ax=ax2,pad=0.01) #,format=ticker.FuncFormatter(fmt)
+
+
+fig2.colorbar(im2,ax=ax2,pad=0.01) #,format=ticker.FuncFormatter(fmt)
 ax1.set_xlabel("$y_0/\lambda$")
-ax2.set_title("Model $L_x^{NR}$ ($x=5\lambda$)")
-fig1.tight_layout()
+ax1.set_ylabel("$z_0/\lambda$")
+ax2.set_xlabel("$y_0/\lambda$")
+ax1.set_title("Smilei $L_x$")
+ax2.set_title("Model $L_x^{NR}$")
+
+circ1 = plt.Circle((0, 0), w0/l0, color='k', fill=False,ls="--",label="$r=w_0$")
+circ2 = plt.Circle((0, 0), w0/l0, color='k', fill=False,ls="--")
+ax1.add_patch(circ1)
+ax2.add_patch(circ2)
+ax1.legend()
+
+ax2.set_yticks([])  # Remove x-axis ticks
+ax2.yaxis.set_visible(False)
+# fig2.colorbar(im2, ax=ax2,pad=0.01) #,format=ticker.FuncFormatter(fmt)
+
 fig2.tight_layout()
 
 

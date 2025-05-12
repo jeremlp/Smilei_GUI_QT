@@ -27,7 +27,7 @@ plt.close("all")
 
 l0=2*pi
 
-a0_requested = 2
+a0_requested = 3
 sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12_dx128_AM8",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a2_Tp12_dx128_AM8",
@@ -155,7 +155,7 @@ def getE(r,theta,z,t):
 
 
 
-def gauss2_int(t,x):
+def gauss2_int(t,x0):
     return 0.5*sqrt(pi/2)*sigma_gauss* (special.erf(sqrt(2)*(t-t_center-x0)/sigma_gauss)+1)
 def gauss2_int_int(t,x):
     t_center = 1.25*Tp
@@ -163,36 +163,35 @@ def gauss2_int_int(t,x):
     expr =lambda t,x : 0.5*sqrt(pi/2)*sigma_gauss*( gauss(t,x)**2*sigma_gauss/sqrt(2*pi) + t + (t-t_center-x)*(special.erf(psi(t,x))))
     return expr(t,x) - expr(0,x)
 
-def dr_Relat_mean(r,t,x):
-    return -1/(1+(f(r,x)*a0)**2/2+ 1/4*1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
-
-def dr_Relat(r,t,x):
-    return -1/(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
-
-def dr(r,t,x):
-    return -1/sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)*a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
 
 def dx_func(r,theta,x,t):
     """ use 1/gamma ?"""
-    gamma = sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)
-    return a0**2/4 * f(r,x)**2 * gauss2_int(t,x) /gamma
+    gamma = sqrt(1+(f(r,x)*a0)**2/2+ 1/16*(f(r,x)*a0)**4)
+    return 1/gamma * a0**2/4 * f(r,x)**2 * gauss2_int(t,x) 
 
 def dtheta_func(r,theta,x,t):
     """ possible 1/r missing for theta velocity"""
-    gamma = sqrt(1+(f(r,x)*a0)**2+ 1/4*(f(r,x)*a0)**4)
+    gamma = sqrt(1+(f(r,x)*a0)**2/2+ 1/16*(f(r,x)*a0)**4)
     return 1/gamma * 1/r * Ftheta_V2_O5(r,theta,x) * gauss2_int_int(t, x)
     
-def dr_func(r,theta,x,t):
-    return dr_Relat_mean(r, t, x)
+def dr_func_small_r(r,theta,x,t):
+    gamma = sqrt(1+(f(r,x)*a0)**2/2+ 1/16*(f(r,x)*a0)**4)
+    return -1/gamma**2 *a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
 
-r0_requested = 1.55*l0
+def dr_func_large_r(r,theta,x,t):
+    """For large r, using 1/gamma works better than the true 1/gamma^2 """
+    gamma = sqrt(1+(f(r,x)*a0)**2/2+ 1/16*(f(r,x)*a0)**4)
+    return -1/gamma *a0**2/4*f_squared_prime(r, x)* gauss2_int_int(t,x)
+
+
+r0_requested = 1.7*l0
 Nid = np.where(np.abs(r[0]-r0_requested) == np.min(np.abs(r[0]-r0_requested)))[0][0]
 r0 = r[0,Nid]
 theta0 = theta[0,Nid]
 z0 = z[0,Nid]
 y0 = y[0,Nid]
 
-r_model = np.abs(r0+dr_func(r0, theta0, x0, t_range))
+r_model = np.abs(r0+dr_func_small_r(r0, theta0, x0, t_range))
 plt.figure()
 plt.plot(t_range/l0, r[:,Nid],label="Smilei r")
 plt.plot(t_range/l0, r_model,"--",label="Model r")
@@ -202,7 +201,7 @@ plt.legend()
 
 plt.figure()
 plt.plot(t_range/l0, x[:,Nid],label="Smilei x")
-plt.plot(t_range/l0, x0+dx_func(r0, theta0, x0, t_range),"--",label="Model r")
+plt.plot(t_range/l0, x0+dx_func(r0, theta0, x0, t_range),"--",label="Model x")
 plt.grid()
 plt.legend()
 
@@ -216,7 +215,7 @@ plt.plot(t_range/l0,theta0+0.2*np.cos(t_range-x0)*gauss(t_range, x0))
 plt.grid()
 plt.legend()
 
-r_model = np.abs(r0 + dr_func(r0,theta0,x0, t_range))
+r_model = np.abs(r0 + dr_func_small_r(r0,theta0,x0, t_range))
 x_model = x0 +dx_func(r0, theta0, x0, t_range)
 
 idx_cross = np.where(r_model==np.min(r_model))[0][0]
@@ -267,7 +266,7 @@ plt.legend()
 plt.tight_layout()
 
 
-
+zeaeazazeaze
 plt.close("all")
 
 t_range = np.arange(10*l0,35*l0,0.5)
@@ -339,3 +338,17 @@ plt.grid()
 plt.xlabel("$r_0/\lambda")
 plt.ylabel("$L_x$")
 plt.title("$L_x^{NT}$ model using $\Theta$ model")
+
+
+
+
+
+# %% Importance of displacement dr/dx
+xR = 0.5*w0**2
+plt.figure()
+plt.plot(t_range, gauss(t_range,x0)*(x[:,Nid]-x[0,Nid])/xR)
+
+plt.plot(t_range, gauss(t_range,x0)*(r[:,Nid]-r[0,Nid])/w0)
+plt.grid()
+plt.xlabel("$t/c\lambda$")
+print("dr/dx = ", np.max(-gauss(t_range,x0)*(r[:,Nid]-r[0,Nid])/w0)/np.max(gauss(t_range,x0)*(x[:,Nid]-x[0,Nid])/xR))

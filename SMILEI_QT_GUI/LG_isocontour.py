@@ -181,7 +181,7 @@ ax.set_zlim(-4,4)
 
 # ax.set_axis_off()
 fig.tight_layout()
-
+plt.savefig('3d_plot_no_bg.png', transparent=True)
 
 
 

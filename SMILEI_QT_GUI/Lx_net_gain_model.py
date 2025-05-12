@@ -25,7 +25,7 @@ import time
 from tqdm import tqdm
 plt.close("all")
 
-a0_requested = 4
+a0_requested = 3
 
 sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8",
                 "SIM_OPTICAL_GAUSSIAN/gauss_a1_Tp12_dx128_AM8",
@@ -405,10 +405,10 @@ SAVE = False
 # plt.fill_between(COEF_Model*(mean_Lx_Model-2*std_Lx_Model),COEF_Model*(mean_Lx_Model+2*std_Lx_Model),color="C3",alpha=0.2)
 # plt.pause(0.1)
 
-coords_var = "r_theta"
+coords_var = "theta"
 N = 10_000
 try:
-    aez
+    # aez
     data = np.loadtxt(rf"{os.environ['SMILEI_QT']}\data\net_gain_model\net_gain_model_{coords_var}_{N}_a{a0:.1f}.txt")
     r_range_Model, mean_Lx_Model, std_Lx_Model = data[:,0], data[:,1], data[:,2]
 except:
@@ -423,7 +423,7 @@ plt.pause(0.1)
 coords_var = "theta_x"
 N = 10_000
 try:
-    aze
+    # aze
     data = np.loadtxt(rf"{os.environ['SMILEI_QT']}\data\net_gain_model\net_gain_model_{coords_var}_{N}_a{a0:.1f}.txt")
     r_range_Model, mean_Lx_Model, std_Lx_Model = data[:,0], data[:,1], data[:,2]
 except:

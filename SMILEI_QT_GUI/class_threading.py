@@ -123,11 +123,51 @@ class ThreadGetFieldsProbeData(QtCore.QThread):
                     del T,X,Y,Z,Btheta
 
                 else: fields_data_list.append(np.array(S.Probe("fields",fields_names[i]).getData()).astype(np.float32))
+                
+        return fields_data_list
+                
+    def getFieldsProbeDataOld(self, boolList, fields_names, S, fields_t_range, fields_paxisX, fields_paxisY, fields_paxisZ):
+        print("THREAD getFieldsProbeData")
+        fields_data_list = []
+        for i in range(len(fields_names)):
+            if boolList[i]:
+                # print(fields_name)
+                if fields_names[i]=="Er":
+                    T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
+                    Er = (Y*np.array(S.Probe(0,"Ey").getData()).astype(np.float32)
+                              + Z*np.array(S.Probe(0,"Ez").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    fields_data_list.append(Er)
+                    del T,X,Y,Z,Er
+                elif fields_names[i]=="Eθ":
+                    T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
+                    Etheta = (Y*np.array(S.Probe(0,"Ez").getData()).astype(np.float32)
+                              - Z*np.array(S.Probe(0,"Ey").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    fields_data_list.append(Etheta)
+                    del T,X,Y,Z,Etheta
+                elif fields_names[i]=="Br":
+                    T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
+                    Br = (Y*np.array(S.Probe(0,"By").getData()).astype(np.float32)
+                              + Z*np.array(S.Probe(0,"Bz").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    fields_data_list.append(Br)
+                    del T,X,Y,Z,Br
+                elif fields_names[i]=="Bθ":
+                    T,X,Y,Z = np.meshgrid(fields_t_range, fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
+                    Btheta = (Y*np.array(S.Probe(0,"Bz").getData()).astype(np.float32)
+                              - Z*np.array(S.Probe(0,"By").getData()).astype(np.float32))/np.sqrt(Y**2+Z**2) #TO VERIFY IF NOT USE A TRANSPOSE
+                    fields_data_list.append(Btheta)
+                    del T,X,Y,Z,Btheta
+
+                else: fields_data_list.append(np.array(S.Probe(0,fields_names[i]).getData()).astype(np.float32))
 
         return fields_data_list
+    
     def run(self):
         """Long-running task."""
-        fields_data_list = self.getFieldsProbeData(self.boolList, self.fields_names, self.S, self.fields_t_range, self.fields_paxisX, self.fields_paxisY, self.fields_paxisZ)
+        try:
+            fields_data_list = self.getFieldsProbeData(self.boolList, self.fields_names, self.S, self.fields_t_range, self.fields_paxisX, self.fields_paxisY, self.fields_paxisZ)
+        except:
+            fields_data_list = self.getFieldsProbeDataOld(self.boolList, self.fields_names, self.S, self.fields_t_range, self.fields_paxisX, self.fields_paxisY, self.fields_paxisZ)
+
         self.finished.emit(fields_data_list)
 
 class ThreadGetPlasmaProbeData(QtCore.QThread):
@@ -397,16 +437,28 @@ class ThreadGetAMIntegral(QtCore.QThread):
     def getAMIntegral(self, S):
         print("THREAD getAMIntegral")
         # t0 = time.perf_counter()
-        fields_paxisX = self.S.Probe("fields","Ex").getAxis("axis1")[:,0]
-        fields_paxisY = self.S.Probe("fields","Ex").getAxis("axis2")[:,1]-self.S.namelist.Ltrans/2
-        fields_paxisZ = self.S.Probe("fields","Ex").getAxis("axis3")[:,2]-self.S.namelist.Ltrans/2
-        X,Y,Z = np.meshgrid(fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
-        Ex = np.array(self.S.Probe("fields","Ex").getData()).astype(np.float32)
-        Ey = np.array(self.S.Probe("fields","Ey").getData()).astype(np.float32)
-        Ez = np.array(self.S.Probe("fields","Ez").getData()).astype(np.float32)
-        Bx = np.array(self.S.Probe("fields","Bx").getData()).astype(np.float32)
-        By = np.array(self.S.Probe("fields","By").getData()).astype(np.float32)
-        Bz = np.array(self.S.Probe("fields","Bz").getData()).astype(np.float32)
+        try:
+            fields_paxisX = self.S.Probe("fields","Ex").getAxis("axis1")[:,0]
+            fields_paxisY = self.S.Probe("fields","Ex").getAxis("axis2")[:,1]-self.S.namelist.Ltrans/2
+            fields_paxisZ = self.S.Probe("fields","Ex").getAxis("axis3")[:,2]-self.S.namelist.Ltrans/2
+            X,Y,Z = np.meshgrid(fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
+            Ex = np.array(self.S.Probe("fields","Ex").getData()).astype(np.float32)
+            Ey = np.array(self.S.Probe("fields","Ey").getData()).astype(np.float32)
+            Ez = np.array(self.S.Probe("fields","Ez").getData()).astype(np.float32)
+            Bx = np.array(self.S.Probe("fields","Bx").getData()).astype(np.float32)
+            By = np.array(self.S.Probe("fields","By").getData()).astype(np.float32)
+            Bz = np.array(self.S.Probe("fields","Bz").getData()).astype(np.float32)
+        except:
+            fields_paxisX = self.S.Probe(0,"Ex").getAxis("axis1")[:,0]
+            fields_paxisY = self.S.Probe(0,"Ex").getAxis("axis2")[:,1]-self.S.namelist.Ltrans/2
+            fields_paxisZ = self.S.Probe(0,"Ex").getAxis("axis3")[:,2]-self.S.namelist.Ltrans/2
+            X,Y,Z = np.meshgrid(fields_paxisX,fields_paxisY,fields_paxisZ,indexing="ij")
+            Ex = np.array(self.S.Probe(0,"Ex").getData()).astype(np.float32)
+            Ey = np.array(self.S.Probe(0,"Ey").getData()).astype(np.float32)
+            Ez = np.array(self.S.Probe(0,"Ez").getData()).astype(np.float32)
+            Bx = np.array(self.S.Probe(0,"Bx").getData()).astype(np.float32)
+            By = np.array(self.S.Probe(0,"By").getData()).astype(np.float32)
+            Bz = np.array(self.S.Probe(0,"Bz").getData()).astype(np.float32)
 
         AM_data = Y*(Ex*By-Ey*Bx)-Z*(Ez*Bx-Ex*Bz)
         AM_trans_int = integrate.simpson(integrate.simpson(AM_data[:,:,:,:],x=fields_paxisZ,axis=-1),x=fields_paxisY,axis=-1)

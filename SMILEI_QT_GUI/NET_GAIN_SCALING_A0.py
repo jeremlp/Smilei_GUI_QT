@@ -14,7 +14,7 @@ l0=2*pi
 
 import os
 import sys
-module_dir_happi = 'C:/Users/Jeremy/_LULI_/Smilei'
+module_dir_happi = f"{os.environ['SMILEI_SRC']}"
 sys.path.insert(0, module_dir_happi)
 import happi
 from scipy import integrate,special

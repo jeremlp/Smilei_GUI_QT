@@ -1211,7 +1211,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.smilei_icon_BUTTON = QtWidgets.QPushButton(self.verlet_container)
         self.smilei_icon_BUTTON.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.smilei_icon_BUTTON.setIcon(self.SMILEI_ICON_LABEL)
-        self.smilei_icon_BUTTON.setIconSize(QtCore.QSize(300, 300))  # Adjust as needed
+        self.smilei_icon_BUTTON.setIconSize(QtCore.QSize(400, 400))  # Adjust as needed
         self.smilei_icon_BUTTON.setStyleSheet("QPushButton { border: none; background: transparent; }")
         self.smilei_icon_BUTTON.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
         
@@ -1237,6 +1237,8 @@ class MainWindow(QtWidgets.QMainWindow):
             x0,y0 = np.random.uniform(1, self.verlet_window), np.random.uniform(1, self.verlet_window)
             circle = patches.Circle((x0, y0), 
                                     circle_size, fc=np.random.choice(self.verlet_circles_colors),ec="k")
+            circle.set_visible(False)
+
             self.verlet_POS[i] = [x0,y0]
             self.verlet_circles_size.append(circle_size)
             self.ax_verlet.add_patch(circle)
@@ -1670,7 +1672,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.diag_id_LABEL.setText(f"D{self.diag_id}")
         
         
-        self.LAMBDA_UM = 0.8#um
+        self.LAMBDA_UM = 1#um
         self.SI_assume_LABEL= QtWidgets.QLabel(f"SI UNITS (𝝀 = {self.LAMBDA_UM} µm)")
 
         me = 9.1093837*10**-31
@@ -2432,7 +2434,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
             W = round(average_over/intensity_dx)
             
-            if "AM" in self.sim_directory_name:
+            if "_AM" in self.sim_directory_name:
                 track_r_center = 0
             else:
                 track_r_center = self.Ltrans/2
@@ -3448,7 +3450,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def onUpdateTabPlasmaFigure(self, plasma_data_list_used_selected_plasma_names):
         if len(plasma_data_list_used_selected_plasma_names)==1:
-            utils.Popup().showError(f"Could not fine Plasma Diagnostic\n{plasma_data_list_used_selected_plasma_names}")
+            utils.Popup().showError(f"Could not find Plasma Diagnostic\n{plasma_data_list_used_selected_plasma_names}")
             return
         plasma_data_list, used_selected_plasma_names = plasma_data_list_used_selected_plasma_names
         l0=2*pi
@@ -4432,6 +4434,8 @@ class MainWindow(QtWidgets.QMainWindow):
         return
 
     def call_ThreadDownloadSimJSON(self):
+        
+        # return
         # print(self.tornado_refresh_BUTTON.styleSheet())
         self.tornado_refresh_BUTTON.setStyleSheet("background-color : #D22B2B	") 
         
@@ -4724,11 +4728,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.verlet_update_TIMER.stop()
                 self.verlet_spawn_TIMER.stop()
                 
+                for c in self.verlet_circles: #hide circles when verlet stopped 
+                    c.set_visible(False)
+                self.canvas_verlet.draw()
+                
                 print("Verlet Timer Deactivated")
             else:
                 self.verlet_update_TIMER.start(self.verlet_update_interval)
                 self.verlet_spawn_TIMER.start(self.verlet_spawn_interval)
                 print("Verlet Timer Activated")
+                
+                for c in self.verlet_circles: #hide circles when verlet stopped 
+                    c.set_visible(True)
+                self.canvas_verlet.draw()
 
             self.is_verlet_timer_active = not self.is_verlet_timer_active  # Toggle state
             

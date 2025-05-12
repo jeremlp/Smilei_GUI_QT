@@ -32,7 +32,6 @@ sim_loc_list_12 = ["SIM_OPTICAL_GAUSSIAN/gauss_a0.1_Tp12_dx128_AM8",
 a0_range_12 = np.array([0.1,1,2,2.33,2.5,3,3.5,4,4.5])
 
 
-
 def w(z):
     zR = 0.5*w0**2
     return w0*np.sqrt(1+(z/zR)**2)
@@ -166,7 +165,7 @@ for a0 in a0_range_smooth[:]:
     Lx_max_model_list_12_O5_GAMMA.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2 + 1/4*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,Tint)))
     # Lx_max_model_list_12_O5_GAMMA.append(np.max(LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,Tint)))
 
-    # Lx_max_model_list_12_O5_GAMMA_MEAN.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2/2 + 1/16*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
+    Lx_max_model_list_12_O5_GAMMA_MEAN.append(np.max(np.sqrt(1 + (f(R,x0)*a0)**2/2 + 1/16*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
     
     
     # Lx_max_model_list_12_O5_GAMMA_MEAN_squared.append(np.max((1 + (f(R,x0)*a0)**2/2 + 1/16*(f(R,x0)*a0)**4)*LxEpolar_V2_O5(R,THETA,x0,2.5*l0,a0,3/8*12*l0)))
@@ -184,11 +183,14 @@ Lx_max_model_list_12_O5_GAMMA_MEAN_squared = np.array(Lx_max_model_list_12_O5_GA
 Lx_max_model_list_12_O5_GAMMA_MEAN_2 = np.array(Lx_max_model_list_12_O5_GAMMA_MEAN_2)
 
 a0r = a0_range_smooth
+r1 = w0*sqrt(2* (2 - sqrt(2)))/2
 
 
 plt.figure()
 # plt.plot(a0_range_smooth,Lx_max_model_list_12_O5,"k-",label="Max |$L_x^{NR}$|", lw=2)
 plt.plot(a0_range_smooth,Lx_max_model_list_12_O5,"k--",label="Max |$L_x^{NR}$|", lw=2)
+gamma_max = np.sqrt(1 + (f(r1,x0)*a0_range_smooth)**2 + 1/4*(f(r1,x0)*a0_range_smooth)**4)
+# plt.plot(a0_range_smooth,gamma_max*Lx_max_model_list_12_O5,"C4--",label="Max g*|$L_x^{NR}$|", lw=2)
 
 
 k = f(1.5*l0,5*l0)
@@ -203,8 +205,8 @@ k = f(1.5*l0,5*l0)
 plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA,
           "-", color="r",label="Max $|\gamma_{max}~L_x^{NR}|$", lw=2)
 
-# plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA_MEAN,
-#           "--", color="C2",label="Max $|<\gamma>~L_x^{NR}|$", lw=2)
+plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA_MEAN,
+          "--", color="C2",label="Max $|<\gamma>~L_x^{NR}|$", lw=2)
 
 # plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA_MEAN_2,
 #           "--", color="C3",label="Max $2<\gamma>~L_x^{NR}|$", lw=2)
@@ -217,13 +219,12 @@ plt.plot(a0r,Lx_max_model_list_12_O5_GAMMA,
 
 
 
-r1 = w0*sqrt(2* (2 - sqrt(2)))/2
 expr_rmin = (np.sqrt(2) - 1) * np.exp(np.sqrt(2) - 2) * (a0_range_smooth**2 * Tint / w0**2)
 # COEF = sqrt(1+(a0_range_smooth*f(r1,0))**2+ 1/4*(a0_range_smooth*f(r1,0))**4)
 # plt.plot(a0_range_smooth,COEF*expr_rmin,"C4--",label="Analytical $L_{x,max}$ with $\gamma_{max}(x=0)$")
 
 COEF = sqrt(1+(a0_range_smooth*f(r1,x0))**2+ 1/4*(a0_range_smooth*f(r1,x0))**4)
-plt.plot(a0_range_smooth,COEF*expr_rmin,"C2--",label="Analytical $L_{x,max}$")
+# plt.plot(a0_range_smooth,COEF*expr_rmin,"C2--",label="Analytical $L_{x,max}$")
 
 
 
